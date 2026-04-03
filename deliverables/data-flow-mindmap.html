@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Copy Generator — Data Flow Mind Map</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    overflow-x: auto;
+    min-height: 100vh;
+  }
+  .header {
+    padding: 32px 40px 16px;
+    border-bottom: 1px solid #222;
+    background: #0a0a0a;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+  .header p { font-size: 13px; color: #888; margin-top: 4px; }
+  .legend {
+    display: flex; gap: 24px; margin-top: 12px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999;
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 2px;
+  }
+  .canvas {
+    padding: 40px;
+    min-width: 1400px;
+  }
+
+  /* --- PHASE SECTIONS --- */
+  .phase {
+    margin-bottom: 48px;
+  }
+  .phase-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #666;
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+  .phase-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* --- NODES --- */
+  .node {
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 14px 18px;
+    min-width: 160px;
+    max-width: 260px;
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .node:hover {
+    border-color: #555;
+    box-shadow: 0 0 20px rgba(255,255,255,0.03);
+  }
+  .node-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .node-subtitle {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.4;
+  }
+  .node-tag {
+    display: inline-block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+
+  /* Node types */
+  .node-skill { border-color: #7c3aed; background: rgba(124, 58, 237, 0.06); }
+  .node-skill .node-tag { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+
+  .node-formula { border-color: #059669; background: rgba(5, 150, 105, 0.06); }
+  .node-formula .node-tag { background: rgba(5, 150, 105, 0.2); color: #6ee7b7; }
+
+  .node-agent { border-color: #2563eb; background: rgba(37, 99, 235, 0.06); }
+  .node-agent .node-tag { background: rgba(37, 99, 235, 0.2); color: #93c5fd; }
+
+  .node-input { border-color: #d97706; background: rgba(217, 119, 6, 0.06); }
+  .node-input .node-tag { background: rgba(217, 119, 6, 0.2); color: #fcd34d; }
+
+  .node-output { border-color: #dc2626; background: rgba(220, 38, 38, 0.06); }
+  .node-output .node-tag { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
+
+  .node-db { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.06); }
+  .node-db .node-tag { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+
+  .node-removed {
+    border-color: #444;
+    background: rgba(100, 100, 100, 0.04);
+    opacity: 0.35;
+    text-decoration: line-through;
+  }
+  .node-removed .node-tag { background: rgba(100,100,100,0.2); color: #888; }
+
+  /* --- ARROWS --- */
+  .arrow {
+    display: flex;
+    align-items: center;
+    color: #444;
+    font-size: 18px;
+    padding: 0 2px;
+    align-self: center;
+  }
+  .arrow-down {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+    color: #444;
+    font-size: 18px;
+  }
+  .arrow-conditional {
+    color: #059669;
+    font-size: 11px;
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  /* --- FLOW ROWS --- */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .flow-section {
+    margin-bottom: 32px;
+  }
+
+  /* --- BRANCH --- */
+  .branch-container {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    margin: 16px 0;
+  }
+  .branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .branch-label {
+    font-size: 11px;
+    color: #059669;
+    font-weight: 500;
+    padding: 4px 10px;
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    border-radius: 12px;
+    background: rgba(5, 150, 105, 0.08);
+  }
+
+  /* --- IO TABLE --- */
+  .io-table {
+    margin-top: 48px;
+    border: 1px solid #222;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .io-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .io-table th {
+    background: #161616;
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 10px;
+    border-bottom: 1px solid #222;
+  }
+  .io-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    color: #ccc;
+    vertical-align: top;
+  }
+  .io-table tr:last-child td { border-bottom: none; }
+  .io-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .var { color: #93c5fd; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; }
+  .new-badge {
+    display: inline-block; font-size: 9px; background: rgba(5, 150, 105, 0.2);
+    color: #6ee7b7; padding: 1px 5px; border-radius: 3px; margin-left: 4px;
+  }
+  .removed-badge {
+    display: inline-block; font-size: 9px; background: rgba(220, 38, 38, 0.2);
+    color: #fca5a5; padding: 1px 5px; border-radius: 3px; margin-left: 4px;
+  }
+
+  /* Detail panel */
+  .detail-section {
+    margin-top: 48px;
+  }
+  .detail-section h2 {
+    font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 20px;
+    padding-bottom: 8px; border-bottom: 1px solid #222;
+  }
+  .detail-card {
+    border: 1px solid #222; border-radius: 8px; padding: 20px;
+    margin-bottom: 16px; background: #111;
+  }
+  .detail-card h3 {
+    font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 8px;
+  }
+  .detail-card p {
+    font-size: 12px; color: #999; line-height: 1.6;
+  }
+  .detail-card ul {
+    list-style: none; padding: 0; margin-top: 8px;
+  }
+  .detail-card li {
+    font-size: 12px; color: #bbb; padding: 3px 0; padding-left: 14px;
+    position: relative;
+  }
+  .detail-card li::before {
+    content: '→'; position: absolute; left: 0; color: #555;
+  }
+
+  .divider {
+    height: 1px; background: #222; margin: 48px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Email Copy Generator — Data Flow</h1>
+  <p>Updated architecture: BQRS removed, Email 2 added, data-informed approach selector, website scrape standard, 2-word subject lines</p>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Claude Skill (one-time setup)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Input Data / DB</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>Formula / Logic (Clay)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>AI Agent (Clay Use AI)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Final Output</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#888"></div>Removed (was BQRS)</div>
+  </div>
+</div>
+
+<div class="canvas">
+
+  <!-- ============ PHASE 1: SKILL GENERATION (one-time per campaign) ============ -->
+  <div class="phase">
+    <div class="phase-label">Phase 1 — Campaign Setup (Claude Skill · one-time per campaign)</div>
+    <div class="flow-row">
+      <div class="node node-input">
+        <div class="node-title">Client Resources</div>
+        <div class="node-subtitle">Call transcripts, notes, templates, Slack threads</div>
+        <div class="node-tag">DB / manual</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node node-skill" style="min-width: 280px;">
+        <div class="node-title">Email Approach Generator Skill</div>
+        <div class="node-subtitle">Reads all client inputs. Produces campaign-level assets. Updated: strategic patterns, Email 2 modes.</div>
+        <div class="node-tag">Claude skill</div>
+      </div>
+      <div class="arrow">→</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div class="node node-skill" style="min-width:180px">
+          <div class="node-title">Value Prop</div>
+          <div class="node-subtitle">Distilled positioning for all agents</div>
+        </div>
+        <div class="node node-skill" style="min-width:180px">
+          <div class="node-title">Approach 1 / 2 / 3</div>
+          <div class="node-subtitle">Strategic briefs with GOAL/SIGNAL/CONSTRAINT patterns, Email 2 mode, research instructions</div>
+        </div>
+        <div class="node node-skill" style="min-width:180px">
+          <div class="node-title">Lead List Context</div>
+          <div class="node-subtitle">Who these leads are + why</div>
+        </div>
+        <div class="node node-skill" style="min-width:180px">
+          <div class="node-title">Data Variables List</div>
+          <div class="node-subtitle">Columns to enrich in Clay</div>
+          <div class="node-tag">new</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============ PHASE 2: PER-ROW CLAY WATERFALL ============ -->
+  <div class="phase">
+    <div class="phase-label">Phase 2 — Per-Lead Processing (Clay Waterfall · runs per row)</div>
+
+    <!-- Row 1: Lead data + approach selection + website scrape -->
+    <div class="flow-section">
+      <div class="flow-row">
+        <div class="node node-input">
+          <div class="node-title">Lead Data</div>
+          <div class="node-subtitle">firstName, company, jobTitle, industry, companyWebsite, enriched data points</div>
+          <div class="node-tag">Clay table</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-formula">
+          <div class="node-title">Approach Selector</div>
+          <div class="node-subtitle">Priority Cascade: checks data availability per approach, selects highest-priority approach whose data requirements are met.</div>
+          <div class="node-tag">formula · updated</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-agent">
+          <div class="node-title">Website Scrape</div>
+          <div class="node-subtitle">Always runs (every row). Visits homepage, product, about pages. Outputs 50-100 word summary of what the company sells and who they serve.</div>
+          <div class="node-tag">Claygent · new · always</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-formula">
+          <div class="node-title">Research Required?</div>
+          <div class="node-subtitle">Reads RESEARCH REQUIRED flag from selected approach. If Email 2 Mode = "3 Ideas" → always YES</div>
+          <div class="node-tag">formula</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Conditional branch -->
+    <div class="flow-section">
+      <div class="branch-container">
+        <!-- YES branch -->
+        <div class="branch">
+          <div class="branch-label">Research Required = YES</div>
+          <div class="node node-removed" style="min-width:200px">
+            <div class="node-title">BQRS Agent</div>
+            <div class="node-subtitle">Was: placeholder substitution + query refinement. Redundant.</div>
+            <div class="node-tag">removed</div>
+          </div>
+          <div class="arrow-down">↓ absorbed into ↓</div>
+          <div class="node node-agent" style="min-width:260px">
+            <div class="node-title">Researcher Agent</div>
+            <div class="node-subtitle">
+              <strong>STEP 1:</strong> Extract query templates from approach, substitute placeholders, convert to plain-language searches.<br><br>
+              <strong>STEP 2:</strong> Run 4–6 targeted web searches using priority evidence list.<br><br>
+              <strong>STEP 3:</strong> Write structured report: Key Finding + Context + Insider Remark Material + Supporting Evidence + Priority Evidence.<br><br>
+              Note: Website scrape is now a separate always-run column. Researcher focuses on approach-specific research only.
+            </div>
+            <div class="node-tag">Claygent · updated</div>
+          </div>
+          <div class="arrow-down" style="color: #2563eb;">↓ Research Report</div>
+        </div>
+
+        <!-- NO branch -->
+        <div class="branch">
+          <div class="branch-label">Research Required = NO</div>
+          <div style="height: 200px; display:flex; align-items:center; justify-content:center;">
+            <div style="color:#666; font-size: 12px; font-style: italic;">Skip to Copywriter<br>(no research cost)</div>
+          </div>
+          <div class="arrow-down">↓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Copywriter -->
+    <div class="flow-section">
+      <div class="flow-row">
+        <div class="node node-agent" style="min-width: 320px;">
+          <div class="node-title">Copywriter Agent</div>
+          <div class="node-subtitle">
+            <strong>Strategic mode</strong> — uses approach as brief, not template.<br><br>
+            <strong>Data Handling:</strong> Adapts dynamically to missing data — uses percentage ranges instead of dollar figures, omits variables rather than fabricating.<br><br>
+            <strong>Email 1 (75-85 words):</strong> MODE A (with research) or MODE B (without). Paragraphs follow GOAL/SIGNAL/CONSTRAINT from approach.<br><br>
+            <strong>Email 2:</strong> Mode defined by approach:<br>
+            • Expand/Reframe — different value prop angle<br>
+            • 3 Specific Ideas — concrete product applications (requires research)<br><br>
+            <strong>Subject Line:</strong> Personalized 2-3 words, Title Case, Colleague Test. Generated from email context — not static templates.<br><br>
+            Uses: SelectedApproach, valueprop, LeadListContext, companyProductsServices (always), researchReport (if available), lead data
+          </div>
+          <div class="node-tag">Use AI · 4o-mini · updated</div>
+        </div>
+        <div class="arrow">→</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="node" style="border-color:#2563eb; background:rgba(37,99,235,0.04);">
+            <div class="node-title">Email 1 (draft)</div>
+          </div>
+          <div class="node" style="border-color:#2563eb; background:rgba(37,99,235,0.04);">
+            <div class="node-title">Email 2 (draft)</div>
+            <div class="node-tag">new</div>
+          </div>
+          <div class="node node-output">
+            <div class="node-title">Subject Line</div>
+            <div class="node-subtitle">Personalized, 2-3 words, Title Case</div>
+            <div class="node-tag">output · updated</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: QA pipeline (Email 1 only) -->
+    <div class="flow-section">
+      <div class="flow-row">
+        <div class="node" style="border-color:#2563eb; background:rgba(37,99,235,0.04);">
+          <div class="node-title">Email 1 (draft)</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-formula">
+          <div class="node-title">Spam Word Checker</div>
+          <div class="node-subtitle">Formula scans Email 1 against ~100-word spam list. Outputs comma-separated flagged words.</div>
+          <div class="node-tag">formula · Email 1 only</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-agent" style="min-width: 280px;">
+          <div class="node-title">Style, Tone & Spam Checker</div>
+          <div class="node-subtitle">
+            1. Replace/remove flagged spam words<br>
+            2. Humanize — sound like a real person<br>
+            3. Casual tone — no corporate stiffness<br>
+            4. Break linear context flow<br><br>
+            Uses: email1, flaggedWords, valueprop, SelectedApproach<br>
+            <strong>Does NOT touch Email 2 or subject lines</strong>
+          </div>
+          <div class="node-tag">Use AI · 4o-mini · updated</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-output">
+          <div class="node-title">Email 1 (final)</div>
+          <div class="node-tag">output</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 5: Email 2 (passes through directly) -->
+    <div class="flow-section">
+      <div class="flow-row">
+        <div class="node" style="border-color:#2563eb; background:rgba(37,99,235,0.04);">
+          <div class="node-title">Email 2 (from copywriter)</div>
+          <div class="node-subtitle">No QA pass — goes direct to output. Manual review recommended.</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-output">
+          <div class="node-title">Email 2 (final)</div>
+          <div class="node-tag">output · new</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============ FINAL OUTPUTS ============ -->
+  <div class="phase">
+    <div class="phase-label">Final Outputs Per Lead</div>
+    <div class="flow-row">
+      <div class="node node-output">
+        <div class="node-title">Email 1</div>
+        <div class="node-subtitle">Humanized, spam-checked, 75-85 words</div>
+      </div>
+      <div class="node node-output">
+        <div class="node-title">Email 2</div>
+        <div class="node-subtitle">Expand/reframe or 3 specific ideas</div>
+        <div class="node-tag">new</div>
+      </div>
+      <div class="node node-output">
+        <div class="node-title">Subject Line</div>
+        <div class="node-subtitle">Personalized by Copywriter Agent — 2-3 words, Title Case, Internal Camo</div>
+        <div class="node-tag">updated</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============ I/O TABLE ============ -->
+  <div class="detail-section">
+    <h2>Agent Input/Output Map</h2>
+    <div class="io-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Agent / Step</th>
+            <th>Inputs</th>
+            <th>Outputs</th>
+            <th>Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Email Approach Generator</strong><br><span style="color:#7c3aed">Claude Skill</span></td>
+            <td>
+              Client resources, call transcripts, notes, templates, data points list, Claygent capabilities list
+            </td>
+            <td>
+              value_prop.md, approach_1.md, approach_2.md, [approach_3.md], leadlist_context.md, data_variables.md
+            </td>
+            <td>One-time per campaign</td>
+          </tr>
+          <tr>
+            <td><strong>Approach Selector</strong><br><span style="color:#059669">Priority Cascade Formula</span></td>
+            <td>
+              <span class="var">{{approach1}}</span>, <span class="var">{{approach2}}</span>, <span class="var">{{approach3}}</span><br>
+              + data availability checks per approach<span class="new-badge">updated</span>
+            </td>
+            <td><span class="var">{{SelectedApproach}}</span></td>
+            <td>$0</td>
+          </tr>
+          <tr>
+            <td><strong>Website Scrape</strong><br><span style="color:#2563eb">Claygent</span></td>
+            <td>
+              <span class="var">{{company}}</span>, <span class="var">{{companyWebsite}}</span>
+            </td>
+            <td><span class="var">{{companyProductsServices}}</span><span class="new-badge">new · always</span></td>
+            <td>Claygent credits (every row)</td>
+          </tr>
+          <tr>
+            <td><strong>Research Required</strong><br><span style="color:#059669">Formula</span></td>
+            <td>
+              <span class="var">{{SelectedApproach}}</span> → RESEARCH REQUIRED flag<br>
+              + Email 2 Mode check<span class="new-badge">new</span>
+            </td>
+            <td>YES / NO</td>
+            <td>$0</td>
+          </tr>
+          <tr style="opacity:0.4; text-decoration:line-through;">
+            <td><strong>BQRS Agent</strong><br><span style="color:#888">Removed</span></td>
+            <td>
+              <span class="var">{{SelectedApproach}}</span>, <span class="var">{{company}}</span>
+            </td>
+            <td>
+              <span class="var">{{booleansearches}}</span>, <span class="var">{{researchreportstructure}}</span>
+            </td>
+            <td><span class="removed-badge">removed</span></td>
+          </tr>
+          <tr>
+            <td><strong>Researcher Agent</strong><br><span style="color:#2563eb">Claygent</span></td>
+            <td>
+              <span class="var">{{SelectedApproach}}</span><span class="new-badge">primary input</span><br>
+              <span class="var">{{company}}</span>, <span class="var">{{industry}}</span>, <span class="var">{{companyWebsite}}</span><br>
+              <span class="var">{{LeadListContext}}</span><br>
+              <span class="var">{{firstName}}</span>, <span class="var">{{jobTitle}}</span><br>
+              <del><span class="var">{{booleansearches}}</span></del><span class="removed-badge">removed</span><br>
+              <del><span class="var">{{researchreportstructure}}</span></del><span class="removed-badge">removed</span>
+            </td>
+            <td><span class="var">{{researchReport}}</span> (no longer includes Company Products/Services)</td>
+            <td>Claygent credits + web search credits</td>
+          </tr>
+          <tr>
+            <td><strong>Copywriter Agent</strong><br><span style="color:#2563eb">Use AI · 4o-mini</span></td>
+            <td>
+              <span class="var">{{SelectedApproach}}</span><br>
+              <span class="var">{{valueprop}}</span><br>
+              <span class="var">{{LeadListContext}}</span><br>
+              <span class="var">{{companyProductsServices}}</span><span class="new-badge">new · always</span><br>
+              <span class="var">{{researchReport}}</span> (if available)<br>
+              <span class="var">{{firstName}}</span>, <span class="var">{{company}}</span>, <span class="var">{{jobTitle}}</span>, <span class="var">{{industry}}</span>
+            </td>
+            <td>
+              <span class="var">{{email1Draft}}</span><br>
+              <span class="var">{{email2}}</span><span class="new-badge">new</span><br>
+              <span class="var">{{subjectLine}}</span><span class="new-badge">new · personalized</span>
+            </td>
+            <td>Use AI credits</td>
+          </tr>
+          <tr>
+            <td><strong>Spam Word Checker</strong><br><span style="color:#059669">Formula</span></td>
+            <td><span class="var">{{email1Draft}}</span>, spam word list (~100 words)</td>
+            <td><span class="var">{{flaggedWords}}</span></td>
+            <td>$0</td>
+          </tr>
+          <tr>
+            <td><strong>Style, Tone & Spam Checker</strong><br><span style="color:#2563eb">Use AI · 4o-mini</span></td>
+            <td>
+              <span class="var">{{email1Draft}}</span><br>
+              <span class="var">{{flaggedWords}}</span><br>
+              <span class="var">{{valueprop}}</span><span class="new-badge">new</span><br>
+              <span class="var">{{SelectedApproach}}</span><span class="new-badge">new</span>
+            </td>
+            <td><span class="var">{{email1Final}}</span></td>
+            <td>Use AI credits</td>
+          </tr>
+          <tr style="opacity:0.4; text-decoration:line-through;">
+            <td><strong>Subject Line Picker</strong><br><span style="color:#888">Removed</span></td>
+            <td>
+              <span class="var">{{SelectedApproach}}</span> → 2 subject line templates
+            </td>
+            <td><span class="var">{{subjectLine}}</span></td>
+            <td><span class="removed-badge">removed — now in Copywriter</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============ CHANGE LOG ============ -->
+  <div class="detail-section">
+    <h2>Changes from Previous Architecture</h2>
+
+    <div class="detail-card">
+      <h3 style="color:#dc2626;">Removed</h3>
+      <ul>
+        <li>BQRS Agent column + cost tracking column</li>
+        <li><code>{{booleansearches}}</code> input to Researcher</li>
+        <li><code>{{researchreportstructure}}</code> input to Researcher</li>
+        <li>Prescriptive paragraph-by-paragraph PATTERN format in approaches</li>
+        <li>"Follow the selected approach pattern exactly" instruction in Copywriter</li>
+        <li>DATA CONDITIONAL LOGIC section from approach files — copywriter handles data availability dynamically</li>
+        <li>Random approach assignment (replaced with Priority Cascade)</li>
+        <li>"Exact phrasing for opener" instruction in research report — researcher provides raw material, copywriter decides phrasing</li>
+        <li>"Hook Context" section from research report — replaced by approach-specific structures</li>
+        <li>Subject Line Templates section from approach files — subject lines now generated by Copywriter Agent per prospect</li>
+        <li>Subject Line Picker formula column — subject line is now part of Copywriter output</li>
+      </ul>
+    </div>
+
+    <div class="detail-card">
+      <h3 style="color:#059669;">Added</h3>
+      <ul>
+        <li>Website Scrape column — dedicated Claygent that always runs (every row), provides <code>{{companyProductsServices}}</code> to Copywriter regardless of approach</li>
+        <li>Researcher self-directs query construction from approach (STEP 1)</li>
+        <li>Priority Cascade Formula for approach selection — data-informed, checks per-approach data availability</li>
+        <li>Data Handling instruction in Copywriter — adapts to missing variables dynamically, uses uncertainty language for proxy-based estimates</li>
+        <li>Company Context section in Copywriter — <code>{{companyProductsServices}}</code> always available, even for Math approach</li>
+        <li>Email 2 output from Copywriter (Mode A: expand/reframe, Mode B: 3 ideas)</li>
+        <li>Subject line generation moved to Copywriter Agent — personalized per prospect using email context, research, and company data (Lavender methodology: 2-3 words, Title Case, Colleague Test, Internal Camo)</li>
+        <li>Style, Tone & Spam Checker replaces old Flagged Word Replacer</li>
+        <li><code>{{LeadListContext}}</code> added as input to Researcher</li>
+        <li><code>{{valueprop}}</code> added as input to Style/Tone/Spam Checker</li>
+        <li>Data Variables list as skill output</li>
+        <li>Research Required auto-YES when Email 2 Mode = "3 Ideas"</li>
+      </ul>
+    </div>
+
+    <div class="detail-card">
+      <h3 style="color:#2563eb;">Updated</h3>
+      <ul>
+        <li>Approach Selector → Priority Cascade formula (data-informed instead of random)</li>
+        <li>Approach PATTERN format → GOAL / SIGNAL / CONSTRAINT (strategic intent, not paragraph templates)</li>
+        <li>Copywriter → strategic brief mode + dynamic data handling + Company Context section (always available)</li>
+        <li>Researcher → website scrape separated into own column; researcher now focuses purely on approach-specific research</li>
+        <li>Research report → factual material only (Key Finding, Insider Remark Material as raw details, no suggested copy; no Company Products/Services — that's in the separate scrape)</li>
+        <li>Subject lines → moved from static per-approach templates to personalized AI-generated by Copywriter Agent (same Lavender methodology, now informed by actual email content and research)</li>
+        <li>Subject Line Picker formula column → removed (subject line now part of Copywriter output)</li>
+        <li>Spam word list reduced from 300+ to ~100 words</li>
+        <li>Flagged Word Replacer → Style, Tone & Spam Checker (broader scope)</li>
+      </ul>
+    </div>
+
+    <div class="detail-card">
+      <h3>Net Cost Impact</h3>
+      <p>
+        <strong>Removed:</strong> BQRS Agent (saved: ~1 Claygent call per row where research = yes)<br>
+        <strong>Added:</strong> Website Scrape column (new Claygent call, every row — lightweight, 50-100 word output)<br>
+        <strong>Added:</strong> Email 2 from Copywriter (marginal token increase in existing call)<br>
+        <strong>Subject lines:</strong> Now part of Copywriter output (marginal token increase, no separate column needed)<br>
+        <strong>Approach Selector:</strong> Formula-based cascade, $0 per row (replaces $0 randomizer — same cost)<br>
+        <strong>Net:</strong> BQRS removal saves 1 Claygent call on research rows. Website Scrape adds 1 lightweight Claygent call on ALL rows. For rows where research runs, this is roughly cost-neutral. For Math/no-research rows, there is a small new cost — but the copywriter now has company context it previously lacked, improving email quality.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

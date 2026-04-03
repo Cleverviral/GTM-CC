@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTM-CC System v7 — Architecture v3.1</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',-apple-system,sans-serif;background:#09090b;color:#e4e4e7;min-height:100vh}
+  .c{max-width:1500px;margin:0 auto;padding:40px 32px}
+  h1{font-size:26px;font-weight:700;color:#fff;margin-bottom:4px}
+  .sub{font-size:13px;color:#71717a;margin-bottom:32px}
+  .lg{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+  .li{display:flex;align-items:center;gap:6px;font-size:11px;color:#a1a1aa}
+  .ld{width:10px;height:10px;border-radius:3px}
+  .div{border:none;border-top:1px solid #27272a;margin:36px 0}
+
+  .sec{margin-bottom:40px}
+  .st{font-size:16px;font-weight:600;color:#fff;padding:10px 16px;border-radius:8px;display:inline-block;margin-bottom:16px}
+  .ss{font-size:12px;color:#71717a;margin-bottom:20px;max-width:900px;line-height:1.7}
+
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+  .card{background:#18181b;border:1px solid #27272a;border-radius:10px;padding:18px}
+  .card h3{font-size:13px;font-weight:600;margin-bottom:8px}
+  .card p{font-size:11px;color:#a1a1aa;line-height:1.6}
+  .card .tag{font-size:9px;padding:2px 7px;border-radius:3px;display:inline-block;margin-top:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .card .hl{font-size:10px;color:#22c55e;margin-top:8px;padding-top:8px;border-top:1px solid #27272a;line-height:1.5}
+  .card .warn{font-size:10px;color:#f59e0b;margin-top:8px;padding-top:8px;border-top:1px solid #27272a;line-height:1.5}
+
+  .c-blue{border-color:#1e3a5f}.c-blue h3{color:#60a5fa}.t-blue{background:#1e3a5f;color:#60a5fa}
+  .c-green{border-color:#166534}.c-green h3{color:#4ade80}.t-green{background:#166534;color:#4ade80}
+  .c-purple{border-color:#3b0764}.c-purple h3{color:#a78bfa}.t-purple{background:#3b0764;color:#a78bfa}
+  .c-orange{border-color:#7c2d12}.c-orange h3{color:#fb923c}.t-orange{background:#7c2d12;color:#fb923c}
+  .c-red{border-color:#7f1d1d}.c-red h3{color:#f87171}.t-red{background:#7f1d1d;color:#f87171}
+  .c-teal{border-color:#134e4a}.c-teal h3{color:#2dd4bf}.t-teal{background:#134e4a;color:#2dd4bf}
+  .c-yellow{border-color:#713f12}.c-yellow h3{color:#fbbf24}.t-yellow{background:#713f12;color:#fbbf24}
+
+  .flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:8px}
+  .fs{background:#18181b;border:1px solid #27272a;border-radius:10px;padding:16px;min-width:190px;max-width:220px;flex-shrink:0;display:flex;flex-direction:column}
+  .fs h3{font-size:12px;font-weight:600;margin-bottom:6px}
+  .fs p{font-size:10px;color:#a1a1aa;line-height:1.5;flex:1}
+  .fs .who{font-size:9px;font-weight:600;margin-top:6px;padding-top:6px;border-top:1px solid #27272a}
+  .ar{display:flex;align-items:center;padding:0 4px;color:#3f3f46;font-size:18px;flex-shrink:0}
+
+  .mono{font-family:'SF Mono',monospace;font-size:11px;line-height:1.8;color:#a1a1aa;background:#0f0f0f;padding:14px;border-radius:8px;margin-top:10px;overflow-x:auto}
+
+  .ph{display:grid;grid-template-columns:50px 1fr;border-bottom:1px solid #27272a}
+  .ph:last-child{border-bottom:none}
+  .ph-n{padding:14px;text-align:center;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .ph-d{padding:14px}
+  .ph-d b{font-size:13px;display:block;margin-bottom:2px}
+  .ph-d span{font-size:11px;color:#a1a1aa}
+  .ph-d small{font-size:10px;color:#52525b;display:block;margin-top:2px}
+
+  .mx{display:grid;grid-template-columns:160px 1fr 1fr;gap:0;max-width:900px}
+  .mx-h{background:#1e1b4b;border:1px solid #3b0764;padding:12px;font-size:11px;font-weight:600;color:#a78bfa;text-align:center}
+  .mx-r{background:#18181b;border:1px solid #27272a;padding:12px;font-size:11px;font-weight:600;color:#e4e4e7;display:flex;align-items:center}
+  .mx-c{border:1px solid #27272a;padding:14px;font-size:11px;line-height:1.6}
+  .mx-g{background:#052e16;color:#4ade80}
+  .mx-y{background:#1a1500;color:#fbbf24}
+  .mx-r2{background:#450a0a;color:#f87171}
+  .mx-b{background:#0c1929;color:#60a5fa}
+
+  @media(max-width:1200px){.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+  @media(max-width:800px){.g3,.g2{grid-template-columns:1fr}.mx{grid-template-columns:120px 1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="c">
+
+<h1>GTM-CC: Complete System Architecture v3.1</h1>
+<p class="sub">One Neon DB &bull; 5 Tables &bull; Three Roles &bull; All Leads Through Clay &bull; segment_ids[] Segmentation &bull; 3 HTTP Columns Push-Back &bull; No Duplicate Contacts</p>
+
+<div class="lg">
+  <div class="li"><div class="ld" style="background:#3b82f6"></div> Neon DB (source of truth)</div>
+  <div class="li"><div class="ld" style="background:#a855f7"></div> Claude Code (strategist interface)</div>
+  <div class="li"><div class="ld" style="background:#f97316"></div> Clay (disposable processing)</div>
+  <div class="li"><div class="ld" style="background:#ef4444"></div> Sequencer (campaign delivery)</div>
+</div>
+
+<hr class="div">
+
+<!-- 1. NEON DB SCHEMA — 5 TABLES -->
+<div class="sec">
+<div class="st" style="background:#172554;color:#60a5fa">1. Neon DB &mdash; 5 Tables (Single Source of Truth)</div>
+<p class="ss">Everything lives here. Clients from Tally. Leads from data team (one row per person, no duplicates). Recipes from strategist. Outputs from Clay via Cloudflare Worker webhook. segment_ids[] on leads encode client-segment membership.</p>
+
+<div class="g3">
+  <div class="card c-blue">
+    <h3>clients</h3>
+    <p>From Tally onboarding form. Client name, ICP criteria, target persona, pain points, USPs, case studies, DNC list, CRM platform, notification prefs. Must be approved before downstream use.<br><br>
+    <b>ICP, persona, pain_points live HERE</b> &mdash; not on segments.</p>
+    <span class="tag t-blue">~30 rows</span>
+  </div>
+  <div class="card c-blue">
+    <h3>segments</h3>
+    <p>Simple registry table. client_id, segment_name, segment_tag (display label), description.<br><br>
+    segment_id (PK) is what lives on leads.segment_ids[]. segment_tag is a human-readable label (e.g., "speedsize-100k-1m-qualified").</p>
+    <span class="tag t-blue">~90 rows</span>
+    <div class="hl">UNIQUE: (client_id, segment_name). Leads reference segments by segment_id (integer), not by tag string.</div>
+  </div>
+  <div class="card c-blue">
+    <h3>leads</h3>
+    <p><b>ONE row per person. No duplicates.</b><br><br>
+    email (UNIQUE), first_name, last_name, company_name, company_domain, job_title, industry, monthly_visits, AOV, LCP, TTI, email_verified, email_verified_at.<br><br>
+    <b>segment_ids INT[]</b> &mdash; array of segment_id values from segments table. e.g., ARRAY[2, 7] (where 2 = speedsize-100k-1m, 7 = solara-marketplace)<br><br>
+    <b>info_tags TEXT[]</b> &mdash; free-form contextual metadata. Source, qualification, data markers. e.g., ARRAY['src:apollo', 'qualified:feb26', 'src:builtwith']</p>
+    <span class="tag t-blue">250K-500K rows</span>
+    <div class="hl">UNIQUE on email. Two separate fields: segment_ids = strict segment membership (integer references to segments.segment_id), info_tags = free-form context (source, qualification, batch markers). No FK on arrays — validated at application level.</div>
+  </div>
+  <div class="card c-blue">
+    <h3>recipes</h3>
+    <p>ONE recipe per client-segment. Contains ALL approaches + selector logic + enrichment config + Clay instructions. Versioned: any change = new row, old row inactive.<br><br>
+    <b>approach_content:</b> Full recipe playbook (structure TBD &mdash; Clay table recipe will be redesigned).<br><br>
+    <b>clay_instructions:</b> Plain-text step-by-step for Clay operator.</p>
+    <span class="tag t-blue">~200-400 rows</span>
+    <div class="hl">Only ONE active recipe per client-segment. Naming: date-client-segment-version (e.g., 2026-03-28-hector-retail-v3).</div>
+  </div>
+  <div class="card c-blue">
+    <h3>email_outputs</h3>
+    <p><b>Simplified for V1.</b> One row per lead per recipe run.<br><br>
+    lead_id, client_id, segment_id, recipe_id, recipe_version, <b>selected_approach</b>, company_summary, batch_id, created_at.<br><br>
+    <b>Subject lines:</b> subject_line_1, subject_line_2<br>
+    <b>Email 1:</b> email_1_variant_a, email_1_variant_b, email_1_variant_c<br>
+    <b>Email 2:</b> email_2_variant_a, email_2_variant_b, email_2_variant_c<br>
+    <b>Email 3:</b> email_3_variant_a, email_3_variant_b, email_3_variant_c<br><br>
+    Variants that don't exist for a campaign stay NULL &mdash; only populated variants get pushed to sequencer.</p>
+    <span class="tag t-blue">500K-1M+ rows</span>
+    <div class="hl">selected_approach tracks which approach ran. Multiple subject lines + email variants enable A/B/C testing in the sequencer. If a recipe only produces variant A, B and C stay NULL.</div>
+  </div>
+</div>
+
+<div style="margin-top:16px;max-width:900px">
+  <div class="card c-yellow">
+    <h3>What's NOT in V1</h3>
+    <p><b>No lifecycle tracking</b> &mdash; no last_contacted_at, cooldown_until, contacted_count. We'll figure this out later.<br>
+    <b>No campaigns table</b> &mdash; sequencer mapping handled manually.<br>
+    <b>No sequencer API sync</b> &mdash; no automated send/reply/bounce tracking.<br>
+    <b>No reply storage in DB</b> &mdash; performance tracked via CSV custom fields in sequencer.<br>
+    <b>No research_report storage</b> &mdash; research is consumed in Clay and discarded.<br>
+    <b>No DNC tags</b> &mdash; DNC handling is a later concern.</p>
+    <div class="warn">V1 focuses on: recipes, email generation, reuse via recipe version matching, and clean handoff to campaign operator.</div>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 2. SEGMENTATION: segment_ids + info_tags -->
+<div class="sec">
+<div class="st" style="background:#172554;color:#60a5fa">2. Segmentation &mdash; segment_ids INT[] + info_tags TEXT[]</div>
+<p class="ss">Two separate fields on leads. segment_ids = strict segment membership (integer references to segments.segment_id). info_tags = free-form contextual metadata (source, qualification, batch markers).</p>
+
+<div class="g2">
+  <div class="card c-blue">
+    <h3>segment_ids INT[] (Segment Membership)</h3>
+    <div class="mono" style="font-size:11px;line-height:2">
+<b style="color:#60a5fa">segments table defines the IDs:</b><br>
+&nbsp;&nbsp;segment_id=1, client=Speedsize, tag=speedsize-1m-plus-qualified<br>
+&nbsp;&nbsp;segment_id=2, client=Speedsize, tag=speedsize-100k-1m-qualified<br>
+&nbsp;&nbsp;segment_id=7, client=Solara, tag=solara-marketplace<br><br>
+
+<b style="color:#60a5fa">leads.segment_ids uses those integers:</b><br>
+&nbsp;&nbsp;john@acme.com: segment_ids = [2]<br>
+&nbsp;&nbsp;jane@bigco.com: segment_ids = [1, 7]<br><br>
+
+<b style="color:#60a5fa">Query: Speedsize 100K-1M leads</b><br>
+&nbsp;&nbsp;WHERE 2 = ANY(segment_ids)<br><br>
+
+<span style="color:#71717a">STRICT: Only segment_id values from segments table. No FK on arrays &mdash; validated at application level. GIN indexed.</span>
+    </div>
+  </div>
+  <div class="card c-blue">
+    <h3>info_tags TEXT[] (Additional Context)</h3>
+    <div class="mono" style="font-size:11px;line-height:2">
+<b style="color:#60a5fa">Free-form, prefixed for organization:</b><br>
+&nbsp;&nbsp;john@acme.com: info_tags = ['src:apollo', 'qualified:feb26']<br>
+&nbsp;&nbsp;jane@bigco.com: info_tags = ['src:builtwith', 'hubspot-lead']<br><br>
+
+<b style="color:#60a5fa">Prefix convention:</b><br>
+&nbsp;&nbsp;src: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rarr; data source (apollo, builtwith, salesnav)<br>
+&nbsp;&nbsp;qualified: &rarr; when/how qualified (feb26, manual)<br>
+&nbsp;&nbsp;batch: &nbsp;&nbsp;&nbsp;&nbsp;&rarr; Clay batch reference<br><br>
+
+<span style="color:#71717a">FREE-FORM: Any value allowed. For context, not for routing.</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:16px;max-width:900px">
+  <div class="card c-blue">
+    <h3>Why Two Separate Fields</h3>
+    <p><b>segment_ids</b> drives the system &mdash; recipes link to segments by segment_id, queries use WHERE segment_id = ANY(segment_ids), email_outputs reference client+segment. Integers, not strings &mdash; faster queries, no typos.<br><br>
+    <b>info_tags</b> captures context &mdash; where the lead came from, when they were qualified, which data source enriched them. Useful for filtering and analysis but doesn't drive the pipeline.<br><br>
+    <b>No duplicate contacts.</b> One person = one row. Enrichment data shared. segment_ids array handles multi-client membership. Dedup is automatic (UNIQUE on email).</p>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 3. APPROACH CONTENT -->
+<div class="sec">
+<div class="st" style="background:#3b0764;color:#a78bfa">3. What's Inside approach_content &mdash; TBD (Redesigning)</div>
+<p class="ss">The Clay table recipe structure is being redesigned. The old methodology used BQRS (Boolean search) and assumed Clay could output email_1/email_2/email_3 separately. The new structure will be built together once the Clay table format is finalized.</p>
+
+<div class="g2">
+  <div class="card c-purple">
+    <h3>What We Know</h3>
+    <p>&bull; approach_content is a single TEXT field in recipes<br>
+    &bull; It contains the complete email generation playbook<br>
+    &bull; Multiple approaches per recipe, each with its own logic<br>
+    &bull; Selector logic picks which approach runs per lead<br>
+    &bull; GPT-4o-mini is the only model in the pipeline<br>
+    &bull; Clay operator follows clay_instructions to set up the table</p>
+  </div>
+  <div class="card c-yellow">
+    <h3>What's Changing</h3>
+    <p>&bull; Old system used BQRS (Boolean Query Research System) &mdash; may not apply to new methodology<br>
+    &bull; Old system assumed email_1, email_2, email_3 as separate outputs &mdash; Clay produces one email body<br>
+    &bull; Selector agent logic will change<br>
+    &bull; Approach document structure will change accordingly<br>
+    &bull; Clay column layout will be redesigned<br><br>
+    <b>We'll design this together once the new Clay table format is decided.</b></p>
+    <div class="warn">Do not build approach_content structure yet. This is the next thing to figure out.</div>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 4. THREE ROLES -->
+<div class="sec">
+<div class="st" style="background:#18181b;color:#fff">4. Three Roles &mdash; Clear Boundaries</div>
+
+<div class="g3">
+  <div class="card c-purple">
+    <h3>Strategist (Mayank)</h3>
+    <p><b>Creates recipes. Owns strategy. Reviews performance.</b><br><br>
+    &bull; Pull client context from Neon<br>
+    &bull; Create recipes using Claude Code<br>
+    &bull; All approaches, selector logic, data requirements, Clay instructions &mdash; all inside one recipe<br>
+    &bull; Test on sample leads (GPT-4o-mini pipeline)<br>
+    &bull; Review emails in chat, iterate, approve<br>
+    &bull; Save recipe to Neon (versioned)<br>
+    &bull; Review performance via sequencer dashboards + CSV custom fields<br>
+    &bull; Decide: keep, kill, or rework</p>
+    <span class="tag t-purple">Does NOT touch Clay or sequencers</span>
+  </div>
+  <div class="card c-orange">
+    <h3>Clay Operator</h3>
+    <p><b>Manages leads + TAM. Runs Clay. Hands off to campaign op.</b><br><br>
+    &bull; Sources new leads, expands TAM, works with data team<br>
+    &bull; Checks Neon: which leads are available for a client-segment?<br>
+    &bull; Pulls leads WITH existing email outputs from Neon<br>
+    &bull; Pushes ALL leads to Clay via MCP<br>
+    &bull; Sets up Clay table per recipe's clay_instructions<br>
+    &bull; Clay processes: verify + check recipe match + generate if needed<br>
+    &bull; Webhook pushes results back to Neon<br>
+    &bull; Hands clean batch (CSV) to campaign operator<br>
+    &bull; Archives Clay table</p>
+    <span class="tag t-orange">Does NOT make recipe decisions or touch sequencers</span>
+  </div>
+  <div class="card c-red">
+    <h3>Campaign Operator</h3>
+    <p><b>Makes campaigns live. Monitors delivery. Handles infra.</b><br><br>
+    &bull; Receives ready batch (CSV) from Clay operator<br>
+    &bull; CSV includes custom fields: segment_id, recipe_id, recipe_version, selected_approach<br>
+    &bull; Uploads to sequencer (Smartlead / Instantly / etc.)<br>
+    &bull; Makes campaign live<br>
+    &bull; Monitors reply rates, domain health, inbox placement<br>
+    &bull; Bad infra? Same emails, fresh domains (pull from Neon)</p>
+    <span class="tag t-red">Delivery only. No Clay, no recipes, no DB writes.</span>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 5. COMPLETE FLOW -->
+<div class="sec">
+<div class="st" style="background:#18181b;color:#fff">5. The Complete Flow &mdash; 6 Steps (V1)</div>
+<p class="ss">Every lead goes through Clay. Clay handles verification + recipe match check. No DB-side splitting. No lifecycle/cooldown tracking in V1.</p>
+
+<div class="flow">
+  <div class="fs c-purple"><h3>1. Create Recipe</h3><p>Strategist creates recipe in Claude Code. Contains all approaches, selector logic, enrichment config, Clay instructions. Tests on sample leads. Saves to Neon.</p><div class="who" style="color:#a78bfa">Strategist</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-orange"><h3>2. Pull Leads</h3><p>Clay operator queries Neon for leads with matching segment_id in segment_ids[]. Pulls leads WITH their existing email outputs (if any).</p><div class="who" style="color:#fb923c">Clay Operator</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-orange" style="border-color:#7c2d12"><h3>3. Push to Clay</h3><p>Claude Code queries Neon, POSTs one lead at a time to Clay webhook URL. Lead data + enrichment + existing outputs + recipe version all travel as columns. One object per request.</p><div class="who" style="color:#fb923c">Clay Operator via Claude Code</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-orange"><h3>4. Clay Processes</h3><p>Re-verify every email. Check recipe match (formula). Decision: PASS_THRU / REGENERATE / HOLD. Pipeline only runs for REGENERATE + NEW leads. selected_approach tracked.</p><div class="who" style="color:#fb923c">Clay (automated)</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-blue"><h3>5. Three HTTP Columns &rarr; Neon</h3><p>Clay HTTP API columns POST directly to Neon /sql endpoint. #1: Verification status. #2: Enrichment data + extra_data JSONB. #3: Email outputs (INSERT with all variants). No middleware needed.</p><div class="who" style="color:#60a5fa">Clay HTTP API (automated per row)</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-red"><h3>6. Hand Off + Upload</h3><p>Clay operator hands clean CSV to campaign operator. CSV has custom fields (segment_id, recipe_id, recipe_version, selected_approach). Campaign op uploads to sequencer.</p><div class="who" style="color:#f87171">Clay Op &rarr; Campaign Op</div></div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 6. WHAT GOES TO/FROM CLAY -->
+<div class="sec">
+<div class="st" style="background:#431407;color:#fb923c">6. What Goes TO Clay vs Comes BACK FROM Clay</div>
+<p class="ss">ALL leads go to Clay. Existing email outputs travel WITH the leads so Clay can decide: pass through or regenerate.</p>
+
+<div class="g2">
+  <div class="card c-orange">
+    <h3>Neon &rarr; Clay (Claude Code &rarr; Clay Webhook)</h3>
+    <p><b>Lead data (always):</b><br>
+    lead_id, email, first_name, last_name, company_name, company_domain, job_title, industry, segment_id, segment_name<br><br>
+
+    <b>Pre-filled enrichment (saves Clay credits):</b><br>
+    AOV, LCP, TTI, monthly_visits, email_verified_at<br><br>
+
+    <b>Existing email outputs (for reuse check):</b><br>
+    existing_subject_line_1, existing_email_1_variant_a, last_recipe_version, last_selected_approach<br><br>
+
+    <b>Recipe context:</b><br>
+    client_id, current_recipe_id, current_recipe_version, info_tags</p>
+    <div class="hl">Claude Code queries Neon &rarr; POSTs one lead at a time to Clay webhook URL. One JSON object per request. Fresh leads have NULLs in existing output columns.</div>
+  </div>
+  <div class="card c-orange">
+    <h3>Clay &rarr; Neon (3 HTTP API Columns &rarr; Neon /sql)</h3>
+    <p><b>HTTP Column 1 &mdash; Verification (ALL leads):</b><br>
+    UPDATE leads: email_verified, email_verified_at, is_catchall<br><br>
+
+    <b>HTTP Column 2 &mdash; Enrichment (ALL leads):</b><br>
+    UPDATE leads: LCP, TTI, AOV, monthly_visits, city, country + extra_data JSONB merge for new data points<br><br>
+
+    <b>HTTP Column 3 &mdash; Email Outputs (REGENERATE only):</b><br>
+    INSERT email_outputs: subject_line_1/2, email_1/2/3_variant_a/b/c, selected_approach, company_summary, batch_id</p>
+    <div class="hl">Each HTTP column POSTs directly to Neon SQL-over-HTTP (/sql endpoint). No middleware. COALESCE + NULLIF pattern handles blanks. extra_data JSONB enables new data points without schema changes.</div>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 7. CLAY DECISION MATRIX -->
+<div class="sec">
+<div class="st" style="background:#431407;color:#fb923c">7. Clay Decision Matrix &mdash; 4 Cases</div>
+<p class="ss">Every lead gets re-verified. Every lead's last recipe version is compared to the current active version. These two checks produce four outcomes.</p>
+
+<div class="mx">
+  <div class="mx-h"></div>
+  <div class="mx-h">Recipe Version MATCHES</div>
+  <div class="mx-h">Recipe Version DOESN'T MATCH (or NEW lead)</div>
+
+  <div class="mx-r" style="background:#052e16;border-color:#166534;color:#4ade80">Email VERIFIED</div>
+  <div class="mx-c mx-g">
+    <b style="font-size:12px">PASS-THROUGH</b><br><br>
+    Email is good. Recipe hasn't changed. Use existing emails as-is.<br><br>
+    <span style="color:#86efac">Pipeline does NOT run. Zero Clay credits spent on email generation. Lead passes through with existing outputs.</span>
+  </div>
+  <div class="mx-c mx-b">
+    <b style="font-size:12px">REGENERATE</b><br><br>
+    Email is good but recipe changed (or brand new lead). Run full pipeline: enrich &rarr; select approach &rarr; generate email.<br><br>
+    <span style="color:#93c5fd">New email_output row created in Neon (with selected_approach). Old row preserved for history.</span>
+  </div>
+
+  <div class="mx-r" style="background:#450a0a;border-color:#7f1d1d;color:#f87171">Email NOT VERIFIED</div>
+  <div class="mx-c mx-y">
+    <b style="font-size:12px">HOLD</b><br><br>
+    Recipe is current but email went bad. Can't send. Lead excluded from batch.<br><br>
+    <span style="color:#fde68a">Leads table updated: email_verified = false. Lead excluded until re-verified.</span>
+  </div>
+  <div class="mx-c mx-r2">
+    <b style="font-size:12px">DEAD (for now)</b><br><br>
+    Recipe changed AND email is bad. Don't waste pipeline credits on an undeliverable address.<br><br>
+    <span style="color:#fca5a5">Leads table updated: email_verified = false. No email generation. Lead parked.</span>
+  </div>
+</div>
+
+<div style="margin-top:16px;max-width:900px">
+  <div class="card c-yellow">
+    <h3>Clay Column Layout &mdash; TBD</h3>
+    <p>The exact Clay column structure is being redesigned. The decision matrix logic (PASS_THRU / REGENERATE / HOLD / DEAD) stays the same, but the pipeline columns after the decision point will change based on the new Clay table recipe format.<br><br>
+    <b>We'll map the exact columns once the new recipe structure is finalized.</b></p>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 8. PERFORMANCE TRACKING V1 -->
+<div class="sec">
+<div class="st" style="background:#3b0764;color:#a78bfa">8. Performance Tracking &mdash; V1 via CSV Custom Fields</div>
+<p class="ss">No automated sequencer sync in V1. Performance is tracked through custom fields that travel with the CSV into the sequencer. The strategist reviews performance in sequencer dashboards.</p>
+
+<div class="g2">
+  <div class="card c-purple">
+    <h3>CSV Custom Fields</h3>
+    <div class="mono" style="font-size:10px">
+      Every CSV the campaign operator uploads includes:<br><br>
+      <b style="color:#a78bfa">segment_id</b> &rarr; which segment<br>
+      <b style="color:#a78bfa">recipe_id</b> &rarr; which recipe<br>
+      <b style="color:#a78bfa">recipe_version</b> &rarr; which version<br>
+      <b style="color:#a78bfa">selected_approach</b> &rarr; which approach ran<br><br>
+      These travel as custom fields in the sequencer.<br>
+      Sequencer dashboard can filter/group by these fields.<br><br>
+      <span style="color:#71717a">Example: Filter by selected_approach = "ROI Calculator"<br>
+      &rarr; see reply rate for just that approach.</span>
+    </div>
+  </div>
+  <div class="card c-purple">
+    <h3>What the Strategist Can See (V1)</h3>
+    <div class="mono" style="font-size:10px">
+      <b style="color:#4ade80">In Sequencer Dashboard:</b><br>
+      &bull; Reply rate by recipe_version<br>
+      &bull; Reply rate by selected_approach<br>
+      &bull; Reply rate by segment<br><br>
+
+      <b style="color:#60a5fa">In Neon DB (queries):</b><br>
+      &bull; How many leads generated per recipe version<br>
+      &bull; How many leads per approach<br>
+      &bull; Which leads have outputs for which recipes<br>
+      &bull; Lead counts per client-segment tag<br><br>
+
+      <span style="color:#71717a">V2+: Automated sync brings reply data INTO Neon<br>
+      for cross-client performance queries.</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 9. CAMPAIGN SCENARIOS -->
+<div class="sec">
+<div class="st" style="background:#18181b;color:#fff">9. Campaign Scenarios &mdash; What Happens in Each Case</div>
+
+<div class="g3">
+  <div class="card c-green">
+    <h3>A: New Client, First Campaign</h3>
+    <p>All leads are new. All go through Clay. Full pipeline for every lead (REGENERATE). selected_approach tracked per lead. Hands batch to campaign op.</p>
+    <span class="tag t-green">~5% of days</span>
+  </div>
+  <div class="card c-blue">
+    <h3>B: Same Recipe, More Leads</h3>
+    <p>Mix of fresh + previously processed leads. All go to Clay. Fresh leads = REGENERATE. Previously processed with current recipe = PASS_THRU (just re-verified). Combined output handed to campaign op.</p>
+    <span class="tag t-blue">~60% of days</span>
+  </div>
+  <div class="card c-orange">
+    <h3>C: Recipe Changed</h3>
+    <p>Version bumped. All leads go to Clay. Recipe match check fails for everyone (no one has outputs for new version). All leads = REGENERATE with new approach assignments. Old email_output rows preserved.</p>
+    <span class="tag t-orange">~20% of days</span>
+  </div>
+  <div class="card c-red">
+    <h3>D: Bad Infrastructure</h3>
+    <p>0% reply rate = bad sending domains. Pull same email outputs from Neon directly (no Clay needed since emails are fine). New sequencer campaign with fresh infrastructure. Zero regeneration.</p>
+    <span class="tag t-red">~10% of days</span>
+  </div>
+  <div class="card c-purple">
+    <h3>E: A/B Test Approaches</h3>
+    <p>Same recipe but random selector assigns different approaches. After 2 weeks, compare reply rates by selected_approach via sequencer custom fields. Winner gets weighted higher in selector.</p>
+    <span class="tag t-purple">As needed</span>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 10. MID-CAMPAIGN RECIPE CHANGE -->
+<div class="sec">
+<div class="st" style="background:#431407;color:#fb923c">10. Mid-Campaign Recipe Change</div>
+<p class="ss">You've sent 1,000 leads with v2. You change the CTA. Here's exactly what happens.</p>
+
+<div class="flow">
+  <div class="fs c-purple" style="min-width:200px"><h3>1. Edit Recipe</h3><p>Strategist changes CTA in Claude Code. Tests on sample leads. Saves as v3. Old v2 marked inactive.</p><div class="who" style="color:#a78bfa">Strategist</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-blue" style="min-width:220px"><h3>2. Already Sent</h3><p>1,000 leads with v2 emails: NOT touched. Live campaigns stay. Their email_output rows keep recipe_version = 2, selected_approach intact.</p><div class="who" style="color:#60a5fa">No action needed</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-orange" style="min-width:220px"><h3>3. Next Batch</h3><p>All leads go to Clay. Recipe match check: no one has v3 outputs. Everyone = REGENERATE. Clay runs full pipeline with v3. New selected_approach assigned.</p><div class="who" style="color:#fb923c">Clay Operator</div></div>
+  <div class="ar">&rarr;</div>
+  <div class="fs c-purple" style="min-width:200px"><h3>4. Compare Later</h3><p>v2 and v3 outputs both in Neon. Compare reply rates via sequencer custom fields: v2 had 2.4%, v3 has 3.2%. The change worked.</p><div class="who" style="color:#a78bfa">Strategist reviews</div></div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 11. CROSS CLIENT -->
+<div class="sec">
+<div class="st" style="background:#18181b;color:#fff">11. Cross-Client Leads &mdash; segment_ids[], Not Duplicate Rows</div>
+<div class="card c-blue" style="max-width:900px">
+  <h3>Same Person, Multiple Clients</h3>
+  <div class="mono">
+    <b style="color:#60a5fa">leads table (ONE ROW):</b><br>
+    id=1234 | john@acme.com | segment_ids=[3, 7]<br>
+    &rarr; where 3 = hector-retail (segment_id=3), 7 = owner-restaurant (segment_id=7)<br>
+    &rarr; Shared enrichment: AOV=$85, LCP=2.3s, monthly_visits=45K<br><br>
+
+    <b style="color:#60a5fa">email_outputs (SEPARATE ROWS per client-segment):</b><br>
+    lead=1234 | client=Hector | segment_id=3 | recipe v3 | approach="ROI Calculator"<br>
+    lead=1234 | client=Owner &nbsp;| segment_id=7 | recipe v2 | approach="Menu Optimizer"<br><br>
+
+    <b style="color:#60a5fa">How it works:</b><br>
+    Clay operator pulls leads WHERE 3 = ANY(segment_ids)<br>
+    &rarr; Gets john@acme.com along with his Hector-specific email_outputs<br>
+    &rarr; Owner.com email_outputs are ignored (different client-segment)<br><br>
+
+    <span style="color:#71717a">One person, one row, shared enrichment. Different emails per client-segment via email_outputs.</span>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 12. CLAY TEMPLATE STRUCTURE -->
+<div class="sec">
+<div class="st" style="background:#431407;color:#fb923c">12. Clay Template Structure &mdash; TBD (Redesigning)</div>
+<p class="ss">The Clay table recipe structure is being redesigned. The re-verification waterfall remains, but the full pipeline template will change.</p>
+
+<div class="g2">
+  <div class="card c-orange">
+    <h3>Re-Verification Template (Stays)</h3>
+    <p>Used for every batch. Verifies emails are still deliverable.<br><br>
+    <b>Waterfall:</b><br>
+    1. Neverbounce &rarr; check email validity<br>
+    2. Catchall check &rarr; if domain is catchall<br>
+    3. Reoon &rarr; secondary verification for uncertain results<br><br>
+    <b>Result:</b> Each lead gets a definitive verified/not-verified status. This feeds the decision matrix.</p>
+  </div>
+  <div class="card c-yellow">
+    <h3>Full Pipeline Template (Redesigning)</h3>
+    <p>The old pipeline assumed:<br>
+    &bull; BQRS (Boolean search) for research<br>
+    &bull; email_1, email_2, email_3 as separate outputs<br>
+    &bull; Specific selector agent structure<br><br>
+    The new pipeline will be designed together. Key questions to resolve:<br>
+    &bull; How does the approach selector work?<br>
+    &bull; What's the email output format? (one body, not three)<br>
+    &bull; What research methodology replaces BQRS?<br>
+    &bull; How many Clay columns and in what order?</p>
+    <div class="warn">Next step: design the new Clay table recipe together.</div>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 13. DATA FLOW SUMMARY -->
+<div class="sec">
+<div class="st" style="background:#18181b;color:#fff">13. Data Flow Summary (V1)</div>
+<p class="ss">Every arrow in the system and what data moves along it.</p>
+
+<div style="max-width:900px">
+  <div class="card" style="border-color:#27272a">
+    <div class="mono" style="font-size:11px;line-height:2.2">
+<b style="color:#a78bfa">Strategist &rarr; Neon</b><br>
+&nbsp;&nbsp;Recipe content (all approaches + selector + Clay instructions)<br>
+&nbsp;&nbsp;Recipe version, status<br><br>
+
+<b style="color:#fb923c">Neon &rarr; Clay (Claude Code &rarr; Clay Webhook, one lead per request)</b><br>
+&nbsp;&nbsp;Lead data + segment info + pre-filled enrichment + existing email outputs + recipe context<br>
+&nbsp;&nbsp;ALL leads for a given segment_id, pushed one at a time<br><br>
+
+<b style="color:#fb923c">Clay &rarr; Neon (3 HTTP API columns &rarr; Neon /sql endpoint)</b><br>
+&nbsp;&nbsp;#1 Verification: email_verified, email_verified_at, is_catchall (ALL leads)<br>
+&nbsp;&nbsp;#2 Enrichment: LCP, TTI, AOV, visits, geo + extra_data JSONB (ALL leads)<br>
+&nbsp;&nbsp;#3 Email Outputs: INSERT with all variants + selected_approach (REGENERATE only)<br><br>
+
+<b style="color:#fb923c">Clay Operator &rarr; Campaign Operator (CSV handoff)</b><br>
+&nbsp;&nbsp;Clean batch: verified leads with final emails (PASS_THRU + REGENERATE)<br>
+&nbsp;&nbsp;HOLD/DEAD leads excluded<br>
+&nbsp;&nbsp;Custom fields: segment_id, recipe_id, recipe_version, selected_approach<br><br>
+
+<b style="color:#f87171">Campaign Operator &rarr; Sequencer</b><br>
+&nbsp;&nbsp;CSV upload with lead info + email + custom fields for tracking<br><br>
+
+<b style="color:#a78bfa">Neon &rarr; Strategist (via Claude Code queries)</b><br>
+&nbsp;&nbsp;Lead counts per client-segment tag<br>
+&nbsp;&nbsp;Email output history: which recipe versions, which approaches<br>
+&nbsp;&nbsp;Performance: reviewed manually in sequencer dashboards using custom fields<br><br>
+
+<span style="color:#52525b">V2+: Lifecycle tracking (cooldown, contacted_count, last_contacted_at)</span><br>
+<span style="color:#52525b">V2+: Campaigns table + Sequencer API sync</span><br>
+<span style="color:#52525b">V2+: DNC handling via tags or separate mechanism</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<hr class="div">
+
+<!-- 14. BUILD ORDER -->
+<div class="sec">
+<div class="st" style="background:#18181b;color:#fff">14. Build Order &mdash; 4 Phases (V1)</div>
+
+<div style="max-width:900px;border:1px solid #27272a;border-radius:10px;overflow:hidden">
+  <div class="ph">
+    <div class="ph-n" style="background:#166534;color:#4ade80">P1</div>
+    <div class="ph-d"><b style="color:#4ade80">Neon Schema + Migration</b><span>Create all 5 tables (clients, segments, leads, recipes, email_outputs). Migrate from Supabase. Replicate COALESCE dedup logic for leads. segment_ids INT[] for segmentation.</span><small>Needs: Neon access. Unblocks: everything.</small></div>
+  </div>
+  <div class="ph">
+    <div class="ph-n" style="background:#3b0764;color:#a78bfa">P2</div>
+    <div class="ph-d"><b style="color:#a78bfa">Recipe Management + Sample Testing</b><span>CRUD for recipes via Claude Code. Test sample leads through GPT-4o-mini pipeline. Show emails in chat. Save to Neon. Track selected_approach.</span><small>Needs: P1 + OpenAI API. Unblocks: recipe creation workflow.</small></div>
+  </div>
+  <div class="ph">
+    <div class="ph-n" style="background:#7c2d12;color:#fb923c">P3</div>
+    <div class="ph-d"><b style="color:#fb923c">Clay Integration (Direct Neon SQL-over-HTTP)</b><span>Claude Code pushes leads to Clay webhook. Three Clay HTTP API columns push back to Neon /sql directly. No middleware. Decision matrix (PASS_THRU / REGENERATE / HOLD). COALESCE + NULLIF pattern. Tested and working.</span><small>Needs: P1 + Clay HTTP API columns configured. Unblocks: full pipeline.</small></div>
+  </div>
+  <div class="ph">
+    <div class="ph-n" style="background:#3b0764;color:#a78bfa">P4</div>
+    <div class="ph-d"><b style="color:#a78bfa">Operational Queries + Monitoring</b><span>Lead counts per client-segment. Batch history. Recipe version history. CSV export with custom fields for sequencer.</span><small>Needs: P3. Unblocks: operational workflow.</small></div>
+  </div>
+</div>
+
+<div style="margin-top:16px;max-width:900px">
+  <div class="card c-yellow">
+    <h3>V2+ Phases (Not in V1)</h3>
+    <p><b>P5: Lifecycle Tracking</b> &mdash; Add cooldown, last_contacted_at, contacted_count. Figure out manual vs API-driven approach.<br><br>
+    <b>P6: Campaigns Table + Sequencer API Sync</b> &mdash; Map sequencer campaigns to client+segment. Automated send/reply/bounce tracking.<br><br>
+    <b>P7: DNC + Advanced Tags</b> &mdash; Per-client DNC handling. Cross-client conflict detection.<br><br>
+    <b>P8: Performance Dashboard</b> &mdash; Cross-client performance queries in Neon. Approach-level analysis.</p>
+  </div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

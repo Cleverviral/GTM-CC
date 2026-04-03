@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTM-CC: Claude Code Pipeline — Mind Map</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+
+    .header {
+      text-align: center;
+      padding: 40px 20px 20px;
+      border-bottom: 1px solid #1a1a2e;
+    }
+    .header h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .header p { font-size: 14px; color: #888; max-width: 600px; margin: 0 auto; }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 16px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #999;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .mindmap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Main flow - vertical sections */
+    .section {
+      margin-bottom: 32px;
+      border: 1px solid #1a1a2e;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #0f0f1a;
+    }
+
+    .section-header {
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .section-header:hover { background: #14142a; }
+
+    .section-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #fff;
+      flex: 1;
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .section-body {
+      padding: 0 28px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #13132a;
+      border: 1px solid #1e1e3a;
+      border-radius: 12px;
+      padding: 18px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover {
+      border-color: #333;
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-items {
+      list-style: none;
+    }
+    .card-items li {
+      font-size: 13px;
+      color: #aaa;
+      padding: 4px 0;
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+    .card-items li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 11px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #333;
+    }
+
+    /* Tag badges */
+    .tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tag-free { background: #0a2e1a; color: #4ade80; }
+    .tag-cheap { background: #2e2a0a; color: #fbbf24; }
+    .tag-paid { background: #2e0a1a; color: #f87171; }
+    .tag-blind { background: #2e0a0a; color: #ef4444; border: 1px solid #ef4444; }
+    .tag-gain { background: #0a1a2e; color: #60a5fa; }
+    .tag-lose { background: #1a0a2e; color: #a78bfa; }
+
+    /* Blind spot cards */
+    .card.blind-spot {
+      border-color: #3a1a1a;
+      background: #1a0f0f;
+    }
+    .card.blind-spot .card-title {
+      color: #f87171;
+    }
+
+    /* Gain cards */
+    .card.gain {
+      border-color: #1a2a3a;
+      background: #0f1520;
+    }
+
+    /* Flow arrows between sections */
+    .flow-arrow {
+      text-align: center;
+      padding: 8px 0;
+      color: #333;
+      font-size: 24px;
+    }
+
+    /* Colors per section */
+    .s1 .section-number { background: #3b82f6; }
+    .s1 .section-header { border-left: 3px solid #3b82f6; }
+    .s2 .section-number { background: #8b5cf6; }
+    .s2 .section-header { border-left: 3px solid #8b5cf6; }
+    .s3 .section-number { background: #06b6d4; }
+    .s3 .section-header { border-left: 3px solid #06b6d4; }
+    .s4 .section-number { background: #f59e0b; }
+    .s4 .section-header { border-left: 3px solid #f59e0b; }
+    .s5 .section-number { background: #10b981; }
+    .s5 .section-header { border-left: 3px solid #10b981; }
+    .s6 .section-number { background: #ef4444; }
+    .s6 .section-header { border-left: 3px solid #ef4444; }
+    .s7 .section-number { background: #ec4899; }
+    .s7 .section-header { border-left: 3px solid #ec4899; }
+
+    /* Cost comparison table */
+    .cost-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    .cost-table th, .cost-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #1e1e3a;
+    }
+    .cost-table th {
+      color: #888;
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cost-table td { color: #ccc; }
+    .cost-table .highlight { color: #4ade80; font-weight: 600; }
+    .cost-table .dim { color: #666; }
+
+    /* Flow diagram */
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 28px;
+      overflow-x: auto;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .flow-step {
+      background: #1a1a30;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #ccc;
+      white-space: nowrap;
+    }
+    .flow-step.highlight-step {
+      border-color: #3b82f6;
+      color: #60a5fa;
+    }
+    .flow-arrow-sm {
+      color: #444;
+      font-size: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .section-body { grid-template-columns: 1fr; }
+      .header h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Claude Code as GTM Orchestrator</h1>
+    <p>Full pipeline: DB (enriched leads) &rarr; Claude Code (enrichment + AI pipeline) &rarr; DB (emails) &rarr; Sequencing</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> Free</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Near-free</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div> Paid</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444; border: 1px solid #ef4444"></div> Blind Spot</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div> Advantage</div>
+  </div>
+
+  <!-- Ideal Flow Diagram -->
+  <div class="mindmap">
+    <div class="section s1">
+      <div class="section-header">
+        <div class="section-number">0</div>
+        <div>
+          <div class="section-title">The Ideal Flow</div>
+          <div class="section-subtitle">User says: "Process the new leads" &mdash; Claude Code does the rest</div>
+        </div>
+      </div>
+      <div class="flow-diagram">
+        <div class="flow-step">DB: Pull unprocessed leads</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step">Jina: Scrape website</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step">Gemini: Summarize</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step">Code: Select approach</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step">SerpAPI + DeepSeek: Research</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step highlight-step">Claude Sonnet: Write emails</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step">DeepSeek: Style check</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step">DB: Save emails</div>
+        <div class="flow-arrow-sm">&rarr;</div>
+        <div class="flow-step">HeyReach: Push to sequence</div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- Section 1: Data Layer -->
+    <div class="section s1">
+      <div class="section-header">
+        <div class="section-number">1</div>
+        <div>
+          <div class="section-title">Data Layer &mdash; Your DB</div>
+          <div class="section-subtitle">Already exists. Enriched leads with verified emails + MX records.</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="card">
+          <div class="card-title">Lead Ingestion</div>
+          <ul class="card-items">
+            <li>From Clay (current enrichment flow)</li>
+            <li>CSV / manual import</li>
+            <li>Apollo / LinkedIn API direct</li>
+            <li>Webhook receivers</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Required Schema</div>
+          <ul class="card-items">
+            <li>first_name, company, job_title</li>
+            <li>company_website, email (verified)</li>
+            <li>cuisine_type, industry (campaign-specific)</li>
+            <li>delivery_platform, review_count (conditional)</li>
+            <li><strong>status</strong>: pending / processing / done / error</li>
+            <li><strong>processed_at</strong>: timestamp</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Output Columns</div>
+          <ul class="card-items">
+            <li>subject_line</li>
+            <li>email_1 (styled, final)</li>
+            <li>email_2 (draft)</li>
+            <li>approach_used (1/2/3)</li>
+            <li>research_report (raw)</li>
+            <li>company_summary (website scrape)</li>
+            <li>spam_words_flagged</li>
+          </ul>
+        </div>
+        <div class="card blind-spot">
+          <div class="card-title"><span class="tag tag-blind">Blind Spot</span> DB Access</div>
+          <ul class="card-items">
+            <li>Claude Code needs a connection method: direct DB credentials? API layer? Supabase SDK?</li>
+            <li>If Postgres/MySQL: connection string in .env</li>
+            <li>If Supabase/Airtable: REST API + key</li>
+            <li>If custom API: need endpoint docs</li>
+            <li>Credentials must be stored securely</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- Section 2: Enrichment -->
+    <div class="section s2">
+      <div class="section-header">
+        <div class="section-number">2</div>
+        <div>
+          <div class="section-title">Enrichment APIs &mdash; Claude Code Runs Directly</div>
+          <div class="section-subtitle">Replace Clay's enrichment waterfall with direct API calls</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="card">
+          <div class="card-title"><span class="tag tag-free">Free</span> Website Scrape</div>
+          <ul class="card-items">
+            <li>Jina Reader API (r.jina.ai)</li>
+            <li>Free tier: 1M tokens/day</li>
+            <li>Returns clean markdown</li>
+            <li>Fallback: Firecrawl ($0.001/page)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="tag tag-cheap">$0.005</span> Web Search</div>
+          <ul class="card-items">
+            <li>SerpAPI for company research</li>
+            <li>100 free searches/month</li>
+            <li>Google Custom Search API (cheaper alt)</li>
+            <li>Serper.dev ($0.001/search, even cheaper)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Additional Enrichment (if needed)</div>
+          <ul class="card-items">
+            <li>Apollo API: company data, contacts</li>
+            <li>Hunter.io: email verification</li>
+            <li>Clearbit: firmographics</li>
+            <li>You may NOT need these if Clay already enriched</li>
+          </ul>
+        </div>
+        <div class="card blind-spot">
+          <div class="card-title"><span class="tag tag-blind">Blind Spot</span> Clay's Data Moat</div>
+          <ul class="card-items">
+            <li>Clay bundles 150+ providers for $149-800/mo</li>
+            <li>Going direct = separate subscriptions per provider</li>
+            <li>Some providers only accessible through aggregators</li>
+            <li><strong>BUT:</strong> If your DB already has enriched leads, you skip this entirely</li>
+            <li><strong>Decision:</strong> Keep Clay for enrichment only? Or replace with direct APIs?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- Section 3: AI Pipeline -->
+    <div class="section s3">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <div>
+          <div class="section-title">AI Pipeline &mdash; The Email Factory</div>
+          <div class="section-subtitle">Same agents, no middleman. Claude Code calls APIs directly.</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="card">
+          <div class="card-title"><span class="tag tag-free">Free</span> Pre-Processing (Local Code)</div>
+          <ul class="card-items">
+            <li>Approach Selector cascade (JS/Python)</li>
+            <li>Calculated variables (order estimates, commission)</li>
+            <li>Case study lookup (cuisine matching)</li>
+            <li>Data validation + missing field handling</li>
+            <li>Cost: $0 &mdash; runs on your machine</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="tag tag-free">Free</span> Website Summarizer</div>
+          <ul class="card-items">
+            <li>Gemini 2.0 Flash API (free tier)</li>
+            <li>Input: scraped website content (truncated)</li>
+            <li>Output: 50-100 word company summary</li>
+            <li>Backup: DeepSeek (~$0.0003/call)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="tag tag-cheap">~$0.002</span> Researcher Agent</div>
+          <ul class="card-items">
+            <li>Only runs for Insider Remark approach</li>
+            <li>SerpAPI search results &rarr; DeepSeek analysis</li>
+            <li>Output: structured research report</li>
+            <li>Skipped for Math + Customer Empathy approaches</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: #06b6d4;">
+          <div class="card-title"><span class="tag tag-paid">~$0.02</span> Copywriter (Claude Sonnet)</div>
+          <ul class="card-items">
+            <li>THE critical step &mdash; quality matters here</li>
+            <li>Full S.P.I.C.E. framework, MODE A/B</li>
+            <li>Outputs: Email 1, Email 2, Subject Line</li>
+            <li>Do NOT downgrade this to a free model</li>
+            <li>~$0.02/lead (Sonnet) vs ~$0.08/lead (Opus)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="tag tag-cheap">~$0.001</span> Style/Tone/Spam Checker</div>
+          <ul class="card-items">
+            <li>Spam word scanner (local code, FREE)</li>
+            <li>DeepSeek style fix (4 jobs in 1 pass)</li>
+            <li>Only processes Email 1</li>
+            <li>Email 2 goes through unchecked</li>
+          </ul>
+        </div>
+        <div class="card blind-spot">
+          <div class="card-title"><span class="tag tag-blind">Blind Spot</span> Prompt Drift</div>
+          <ul class="card-items">
+            <li>Prompts live as .md files in GTM-CC</li>
+            <li>No A/B testing framework built in</li>
+            <li>Quality monitoring is manual (read the emails)</li>
+            <li><strong>Mitigation:</strong> Build a scoring script that checks word count, CTA format, spam words automatically</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- Section 4: Orchestration -->
+    <div class="section s4">
+      <div class="section-header">
+        <div class="section-number">4</div>
+        <div>
+          <div class="section-title">Orchestration &mdash; How Claude Code Runs This</div>
+          <div class="section-subtitle">The execution model. This is where the blind spots live.</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="card">
+          <div class="card-title">Execution Model</div>
+          <ul class="card-items">
+            <li>You: "Process the next 50 leads for Owner.com"</li>
+            <li>Claude Code: reads DB &rarr; loops through leads &rarr; calls APIs &rarr; writes results back</li>
+            <li>Single Python/Node script orchestrates everything</li>
+            <li>Progress saved to DB after each lead (checkpoint)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">The Script Architecture</div>
+          <ul class="card-items">
+            <li><strong>process_leads.py</strong> &mdash; main orchestrator</li>
+            <li>Reads config: client name, batch size, approach files</li>
+            <li>Connects to DB, pulls pending leads</li>
+            <li>For each lead: runs pipeline steps sequentially</li>
+            <li>Saves results after EACH lead (crash-safe)</li>
+            <li>Logs everything to file + DB</li>
+          </ul>
+        </div>
+        <div class="card blind-spot">
+          <div class="card-title"><span class="tag tag-blind">Blind Spot</span> No Auto-Scheduling</div>
+          <ul class="card-items">
+            <li>Claude Code doesn't run by itself</li>
+            <li>Someone must say "process the leads"</li>
+            <li>No cron, no trigger, no webhook listener</li>
+            <li><strong>Mitigation A:</strong> Claude Code scheduled tasks MCP</li>
+            <li><strong>Mitigation B:</strong> cron job that runs the Python script directly</li>
+            <li><strong>Mitigation C:</strong> Accept manual trigger (fine for weekly batches)</li>
+          </ul>
+        </div>
+        <div class="card blind-spot">
+          <div class="card-title"><span class="tag tag-blind">Blind Spot</span> Sequential Processing</div>
+          <ul class="card-items">
+            <li>Claude Code processes one lead at a time</li>
+            <li>~30-60 seconds per lead (API calls + LLM inference)</li>
+            <li>50 leads &asymp; 30 minutes</li>
+            <li>500 leads &asymp; 5 hours</li>
+            <li><strong>Mitigation:</strong> Python script with asyncio can parallelize API calls (3-5 concurrent leads)</li>
+            <li><strong>Mitigation:</strong> Process in batches across sessions</li>
+          </ul>
+        </div>
+        <div class="card blind-spot">
+          <div class="card-title"><span class="tag tag-blind">Blind Spot</span> Session Limits</div>
+          <ul class="card-items">
+            <li>Claude Code sessions have token/time limits</li>
+            <li>Long-running processing may hit context limits</li>
+            <li><strong>Mitigation:</strong> Build as standalone script, not conversational</li>
+            <li>Claude Code WRITES the script, then you RUN it</li>
+            <li>Script runs independently of Claude Code session</li>
+          </ul>
+        </div>
+        <div class="card blind-spot">
+          <div class="card-title"><span class="tag tag-blind">Blind Spot</span> Error Recovery</div>
+          <ul class="card-items">
+            <li>What if Jina is down? API rate-limited? DeepSeek 500 error?</li>
+            <li>Need retry logic with exponential backoff</li>
+            <li>Need per-lead error status in DB</li>
+            <li>Need graceful degradation (skip research if SerpAPI fails)</li>
+            <li><strong>Mitigation:</strong> Build into the Python script</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- Section 5: Output -->
+    <div class="section s5">
+      <div class="section-header">
+        <div class="section-number">5</div>
+        <div>
+          <div class="section-title">Output & Delivery</div>
+          <div class="section-subtitle">Emails generated, now push to sequencing tools</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="card">
+          <div class="card-title">Save to DB</div>
+          <ul class="card-items">
+            <li>subject_line, email_1, email_2</li>
+            <li>approach_used, research_report</li>
+            <li>company_summary, spam_flags</li>
+            <li>status = "done", processed_at = now()</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Push to Sequencing Tool</div>
+          <ul class="card-items">
+            <li>HeyReach API (you already have this MCP)</li>
+            <li>Or: Instantly, Smartlead, Salesloft</li>
+            <li>Map: email &rarr; lead, subject &rarr; subject, body &rarr; email_1</li>
+            <li>Claude Code can do this push too</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">QA Layer</div>
+          <ul class="card-items">
+            <li>Auto-check: word count, CTA format, spam words</li>
+            <li>Flag emails that fail validation rules</li>
+            <li>Manual review queue for flagged emails</li>
+            <li>Sample check: read 10% of output emails</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Full Circle: Claude Code &rarr; HeyReach</div>
+          <ul class="card-items">
+            <li>Claude Code can push directly to HeyReach</li>
+            <li>add_leads_to_campaign with email fields</li>
+            <li>No manual export/import step</li>
+            <li>End-to-end: DB &rarr; emails &rarr; sequences</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- Section 6: Cost Analysis -->
+    <div class="section s6">
+      <div class="section-header">
+        <div class="section-number">6</div>
+        <div>
+          <div class="section-title">Cost Comparison</div>
+          <div class="section-subtitle">Claude Code pipeline vs Clay + n8n vs Clay-only</div>
+        </div>
+      </div>
+      <div class="section-body" style="grid-template-columns: 1fr;">
+        <div class="card">
+          <table class="cost-table">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Claude Code Pipeline</th>
+                <th>Clay + n8n</th>
+                <th>Clay Only</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Monthly SaaS</td>
+                <td class="highlight">$0</td>
+                <td>$149-800 (Clay) + $20-50 (n8n)</td>
+                <td>$149-800 (Clay)</td>
+              </tr>
+              <tr>
+                <td>Website Scrape</td>
+                <td class="highlight">FREE (Jina)</td>
+                <td>FREE (Jina)</td>
+                <td>Claygent credit</td>
+              </tr>
+              <tr>
+                <td>Website Summary</td>
+                <td class="highlight">FREE (Gemini Flash)</td>
+                <td>FREE (Gemini Flash)</td>
+                <td>Use AI credit</td>
+              </tr>
+              <tr>
+                <td>Web Search</td>
+                <td>~$0.005/search</td>
+                <td>~$0.005/search</td>
+                <td>Claygent credit</td>
+              </tr>
+              <tr>
+                <td>Researcher</td>
+                <td>~$0.001/lead (DeepSeek)</td>
+                <td>~$0.001/lead (DeepSeek)</td>
+                <td>Claygent credit</td>
+              </tr>
+              <tr>
+                <td>Copywriter</td>
+                <td>~$0.02/lead (Claude Sonnet)</td>
+                <td>~$0.02/lead (Claude Sonnet)</td>
+                <td>Use AI credit (GPT-4o-mini)</td>
+              </tr>
+              <tr>
+                <td>Style Checker</td>
+                <td>~$0.001/lead (DeepSeek)</td>
+                <td>~$0.001/lead (DeepSeek)</td>
+                <td>Use AI credit</td>
+              </tr>
+              <tr style="border-top: 2px solid #333;">
+                <td><strong>Per Lead Total</strong></td>
+                <td class="highlight"><strong>~$0.03</strong></td>
+                <td>~$0.03 + SaaS split</td>
+                <td>~$0.15-0.50</td>
+              </tr>
+              <tr>
+                <td><strong>500 leads/month</strong></td>
+                <td class="highlight"><strong>$15</strong></td>
+                <td>$185-865</td>
+                <td>$225-1050</td>
+              </tr>
+              <tr>
+                <td><strong>2000 leads/month</strong></td>
+                <td class="highlight"><strong>$60</strong></td>
+                <td>$230-910</td>
+                <td>$450-1800</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&darr;</div>
+
+    <!-- Section 7: Trade-offs -->
+    <div class="section s7">
+      <div class="section-header">
+        <div class="section-number">7</div>
+        <div>
+          <div class="section-title">What You Gain vs What You Lose</div>
+          <div class="section-subtitle">Honest assessment of the trade-offs</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="card gain">
+          <div class="card-title"><span class="tag tag-gain">Gain</span> Zero SaaS Costs</div>
+          <ul class="card-items">
+            <li>No Clay subscription for AI pipeline</li>
+            <li>No n8n hosting</li>
+            <li>Pay only for API calls (pennies)</li>
+          </ul>
+        </div>
+        <div class="card gain">
+          <div class="card-title"><span class="tag tag-gain">Gain</span> Full Control</div>
+          <ul class="card-items">
+            <li>Every prompt version-controlled in Git</li>
+            <li>Change anything instantly</li>
+            <li>No vendor lock-in</li>
+            <li>Debug any step by reading the script</li>
+          </ul>
+        </div>
+        <div class="card gain">
+          <div class="card-title"><span class="tag tag-gain">Gain</span> Single Tool</div>
+          <ul class="card-items">
+            <li>No Clay &harr; n8n &harr; API handoffs</li>
+            <li>No data sync issues</li>
+            <li>One place to debug</li>
+            <li>Claude Code writes + runs everything</li>
+          </ul>
+        </div>
+        <div class="card gain">
+          <div class="card-title"><span class="tag tag-gain">Gain</span> Better Model Access</div>
+          <ul class="card-items">
+            <li>Claude Sonnet/Opus for copywriting (vs Clay's GPT-4o-mini)</li>
+            <li>Direct API = latest models immediately</li>
+            <li>No waiting for Clay to add new models</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: #3a1a3a;">
+          <div class="card-title"><span class="tag tag-lose">Lose</span> Visual Workflow Editor</div>
+          <ul class="card-items">
+            <li>No drag-and-drop like Clay or n8n</li>
+            <li>Pipeline is code, not visual nodes</li>
+            <li>Harder for non-technical team members</li>
+            <li><em>Trade-off worth it if you're the only operator</em></li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: #3a1a3a;">
+          <div class="card-title"><span class="tag tag-lose">Lose</span> Auto-Scheduling</div>
+          <ul class="card-items">
+            <li>No "run every Monday at 9am" built in</li>
+            <li>Need cron or scheduled tasks workaround</li>
+            <li><em>Acceptable if you run weekly batches manually</em></li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: #3a1a3a;">
+          <div class="card-title"><span class="tag tag-lose">Lose</span> Monitoring Dashboard</div>
+          <ul class="card-items">
+            <li>No visual execution logs like n8n</li>
+            <li>No error alerts</li>
+            <li><em>Mitigate with logging to DB + simple dashboard</em></li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: #3a1a3a;">
+          <div class="card-title"><span class="tag tag-lose">Lose</span> Parallel Processing</div>
+          <ul class="card-items">
+            <li>Sequential by default (1 lead at a time)</li>
+            <li><em>Mitigate with asyncio in Python (3-5x speedup)</em></li>
+            <li>Still slower than Clay's parallel column processing</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="section" style="border-color: #10b981; margin-top: 40px;">
+      <div class="section-header" style="border-left: 3px solid #10b981;">
+        <div class="section-number" style="background: #10b981;">!</div>
+        <div>
+          <div class="section-title">The Key Architectural Decision</div>
+          <div class="section-subtitle">Script-based vs conversational execution</div>
+        </div>
+      </div>
+      <div class="section-body" style="grid-template-columns: 1fr 1fr;">
+        <div class="card" style="border-color: #10b981;">
+          <div class="card-title" style="color: #4ade80;">Option A: Claude Code WRITES the script</div>
+          <ul class="card-items">
+            <li>Claude Code creates <strong>process_leads.py</strong></li>
+            <li>Script runs independently (python process_leads.py)</li>
+            <li>Can be cron'd, asyncio'd, parallelized</li>
+            <li>Claude Code iterates on it when you need changes</li>
+            <li>Session limits don't matter &mdash; script runs standalone</li>
+            <li><strong>Best for: production, large batches, automation</strong></li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: #f59e0b;">
+          <div class="card-title" style="color: #fbbf24;">Option B: Claude Code IS the runtime</div>
+          <ul class="card-items">
+            <li>You say: "Process 50 leads for Owner.com"</li>
+            <li>Claude Code runs the pipeline in-session</li>
+            <li>More interactive, can adjust on the fly</li>
+            <li>Limited by session duration / context window</li>
+            <li>Good for small batches and testing</li>
+            <li><strong>Best for: testing, small lists, ad-hoc runs</strong></li>
+          </ul>
+        </div>
+      </div>
+      <div style="padding: 0 28px 24px;">
+        <div class="card" style="border-color: #3b82f6;">
+          <div class="card-title" style="color: #60a5fa;">Recommendation: Start with B, graduate to A</div>
+          <ul class="card-items">
+            <li>Use Option B to test and validate the pipeline with 5-10 leads</li>
+            <li>Once the flow works, have Claude Code package it into a standalone script (Option A)</li>
+            <li>Run the script via cron or manually for production batches</li>
+            <li>Come back to Claude Code when you need to modify the pipeline</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

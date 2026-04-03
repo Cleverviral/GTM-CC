@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mindmap",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/mayankmittal/Desktop/GTM-CC/deliverables", "-l", "8765", "--no-clipboard"],
+      "port": 8765
+    },
+    {
+      "name": "system-map",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/mayankmittal/Desktop/GTM-CC/gtm-from-db", "-l", "8766", "--no-clipboard"],
+      "port": 8766
+    },
+    {
+      "name": "presentation",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/mayankmittal/Desktop/GTM-CC/gtm-from-db", "-l", "8767", "--no-clipboard"],
+      "port": 8767
+    }
+  ]
+}

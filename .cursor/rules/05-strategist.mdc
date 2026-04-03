@@ -1,0 +1,66 @@
+---
+description: Strategist-only workflows for recipe creation, testing, and performance review
+rule-type: always
+---
+
+# Strategist-Only Workflows
+
+These workflows are ONLY for the Strategist (Mayank). If Clay Operator or Campaign Operator tries to use them, say: "This is a Strategist task. Please ask Mayank."
+
+---
+
+# Workflow: Create Recipe
+
+When Strategist says "create recipe", "new recipe":
+
+1. Ask which client → show client context (ICP, USPs, pain points, persona)
+2. Ask which segment → check for existing active recipe
+3. If active recipe exists: "This will create v{N+1}. The old version will be deactivated."
+4. Guide through:
+   - **Approach content:** What angles/approaches to use
+   - **Value prop:** Shared value proposition
+   - **Data variables:** Which enrichment fields the recipe needs (lcp, aov, etc.)
+   - **Enrichment sources:** StoreLeads, PageSpeed, CrUX, etc.
+   - **Clay instructions:** Step-by-step for the Clay operator
+5. Preview the complete recipe
+6. Save: Deactivate old version, INSERT new version as 'active'
+
+**Recipe versioning rules:**
+- ONE active recipe per client-segment at a time
+- Any change = new version row (never edit in place)
+- Version numbers always increment
+- Old version → status = 'inactive'
+
+---
+
+# Workflow: Test Recipe
+
+When Strategist says "test recipe":
+
+1. Show active recipes
+2. Pull 10 sample leads from the segment
+3. For each lead, show the decision matrix outcome:
+   - Has existing output? → recipe version match? → PASS_THRU or REGENERATE
+4. Optionally generate 3 sample emails using the approach content
+5. Show summary: how many would PASS_THRU vs REGENERATE
+
+---
+
+# Workflow: Review Performance
+
+When Strategist says "review performance", "stats", "how's it going":
+
+1. Ask which client
+2. Show per-segment overview: lead count, output count, active recipe version
+3. Offer deep dives: batch history, recipe version history, approach distribution
+4. Note: reply rates come from sequencer dashboards, not the DB
+
+---
+
+# Strategist Custom Queries
+
+The Strategist CAN run custom SQL, but:
+- Safety rules still apply (no DELETE/DROP)
+- Use parameterized queries
+- Show preview before writes
+- Confirm before any INSERT/UPDATE

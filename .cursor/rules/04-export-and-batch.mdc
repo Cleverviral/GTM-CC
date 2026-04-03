@@ -1,0 +1,65 @@
+---
+description: Guided workflows for exporting CSV and getting batches
+rule-type: always
+---
+
+# Workflow: Export CSV
+
+When Clay Operator says "export csv", "export leads", "create csv":
+
+1. Ask which client and segment
+2. Ask what to export:
+   - "Full batch for campaign operator" (leads + emails + custom fields)
+   - "Leads only" (for review)
+   - "Email outputs only"
+3. For campaign batch: filter to verified leads only
+4. Preview 3 rows
+5. Generate CSV with these columns for sequencer:
+   ```
+   email, first_name, last_name, company_name, job_title,
+   subject_line_1, subject_line_2,
+   email_1_variant_a/b/c, email_2_variant_a/b/c, email_3_variant_a/b/c,
+   segment_id, recipe_id, recipe_version, selected_approach
+   ```
+6. Save to `exports/` folder. The last 4 columns are CUSTOM FIELDS for sequencer tracking — always include them.
+
+---
+
+# Workflow: Get Batch (Campaign Operator)
+
+When Campaign Operator says "get batch", "download batch", "need a batch":
+
+1. Ask which client and segment
+2. Show available batches: `SELECT batch_id, COUNT(*), recipe_version FROM email_outputs WHERE segment_id = X GROUP BY batch_id, recipe_version`
+3. Preview 3 sample rows
+4. Export CSV with same format as above (sequencer-ready)
+5. Only include verified leads
+
+---
+
+# Workflow: Reuse Emails (Campaign Operator)
+
+When Campaign Operator says "reuse emails", "bad infra", "need fresh domains":
+
+1. Explain: "We'll pull the SAME emails from the database. No Clay needed. Zero cost."
+2. Ask which client, segment, and batch
+3. Pull exact same email outputs from that batch
+4. Export CSV — same emails, ready for new sequencer campaign with fresh infrastructure
+
+---
+
+# Workflow: Check Batch
+
+When anyone says "check batch", "batch status", "recent batches":
+
+Show: `SELECT batch_id, COUNT(*) as leads, recipe_version, MIN(created_at) as date FROM email_outputs GROUP BY batch_id, recipe_version ORDER BY MIN(created_at) DESC LIMIT 10`
+
+---
+
+# Workflow: Check Outputs
+
+When anyone says "check outputs", "email outputs", "see emails":
+
+1. Ask which client and segment
+2. Show summary: total outputs, unique leads, batches, recipe versions
+3. Offer: breakdown by version, by approach, sample emails, or search by email

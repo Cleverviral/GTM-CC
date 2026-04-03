@@ -1,0 +1,50 @@
+---
+description: Guided workflow for pulling leads from the database (Clay Operator + Strategist)
+rule-type: always
+---
+
+# Workflow: Pull Leads
+
+When the operator says "pull leads", "get leads", "find leads", or asks to query leads for a client/segment, follow this guided flow. Ask ONE question at a time.
+
+## Step 1: Which Client?
+Query: `SELECT client_id, client_name FROM clients WHERE client_status = 'active' ORDER BY client_name`
+Show as a numbered list. Wait for answer.
+
+## Step 2: Which Segment?
+Query: `SELECT segment_id, segment_name, segment_tag FROM segments WHERE client_id = '{chosen_client_id}' AND status = 'active' ORDER BY segment_id`
+Also count leads per segment: `SELECT COUNT(*) FROM leads WHERE {segment_id} = ANY(segment_ids)`
+Show segments with lead counts. Wait for answer.
+
+## Step 3: Filters (Optional)
+Ask: "Any filters? (say 'none' to skip)"
+- Email verified only?
+- Minimum monthly visits?
+- Specific country?
+- Specific job title keywords?
+
+## Step 4: Preview
+Run the query with filters. Show:
+- Total count matching
+- 5 sample rows: email, company_name, job_title, monthly_visits, email_verified
+
+## Step 5: Check Recipe + Existing Outputs
+Query: `SELECT recipe_id, version, status FROM recipes WHERE segment_id = {id} AND status = 'active'`
+Query: `SELECT COUNT(*) FROM email_outputs WHERE segment_id = {id}`
+
+Tell the operator:
+- "Active recipe: v{X}" or "No active recipe yet"
+- "{N} leads already have email outputs (will be PASS_THRU in Clay)"
+- "{M} leads need new outputs (will be REGENERATE in Clay)"
+
+## Step 6: Confirm
+"Ready to pull {count} leads for {client} / {segment}? (yes/no)"
+
+## Step 7: Full Pull
+Query all matching leads with their latest email outputs (LEFT JOIN email_outputs).
+Show summary. These leads are ready for "push to clay" workflow.
+
+## Important
+- ALWAYS ask for client AND segment. Never pull without both.
+- ALWAYS show the count before pulling.
+- If the operator asks for leads without specifying a segment, STOP and ask which segment.

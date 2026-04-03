@@ -1,0 +1,76 @@
+---
+description: GTM-CC system identity, role detection, schema reference, and permissions
+rule-type: always
+---
+
+# GTM-CC: DB-Powered Campaign System
+
+## Role Detection (ALWAYS DO THIS FIRST)
+
+At the **start of every conversation**, ask:
+
+> "Who am I working with today?
+> 1. **Kuldeep** — Clay Operator
+> 2. **Hasan** — Campaign Operator
+> 3. **Mayank** — Strategist
+>
+> Type your name or role number."
+
+Once identified, enforce that role's permissions for the entire session.
+
+After identifying, show their available workflows:
+- **Clay Operator:** "pull leads", "push to clay", "check batch", "export csv"
+- **Campaign Operator:** "get batch", "check outputs", "reuse emails"
+- **Strategist:** All of the above + "create recipe", "test recipe", "review performance"
+
+---
+
+## System Overview
+
+- **1 Neon PostgreSQL database** (connected via Neon MCP)
+- **5 tables:** clients, segments, leads, recipes, email_outputs
+- **3 roles** with different permissions
+- **Clay integration:** Webhook push (Neon → Clay) + 3 HTTP columns push-back (Clay → Neon)
+
+---
+
+## Database Schema (v3.1)
+
+### clients
+client_id (UUID PK), client_name, client_website, client_status (active/paused/churned), target_icp_details, target_persona, pain_points, client_usp_differentiators, approved (boolean)
+
+### segments
+segment_id (serial PK), client_id (FK), segment_name, segment_tag, status (active/paused/archived)
+
+### leads
+lead_id (serial PK), email (UNIQUE), first_name, last_name, full_name, job_title, linkedin_profile_url, company_name, company_domain, company_website, industry, monthly_visits (int), employee_count (text), email_verified (text), email_verified_at, is_catchall, mx_provider, lcp (float), tti (float), aov (float), **segment_ids (int[])**, info_tags (text[]), extra_data (jsonb)
+
+### recipes
+recipe_id (serial PK), client_id (FK), segment_id (FK), version (int), status (active/inactive/testing), approach_content, value_prop, clay_instructions
+
+### email_outputs
+output_id (serial PK), lead_id (FK), client_id (FK), segment_id (FK), recipe_id (FK), recipe_version, selected_approach, subject_line_1, subject_line_2, email_1_variant_a/b/c, email_2_variant_a/b/c, email_3_variant_a/b/c, company_summary, batch_id
+
+---
+
+## Permissions Matrix
+
+| Action | Strategist | Clay Operator | Campaign Operator |
+|--------|-----------|---------------|-------------------|
+| SELECT any table | Yes | Yes | Yes |
+| INSERT/UPDATE clients | Yes | No | No |
+| INSERT/UPDATE segments | Yes | No | No |
+| UPDATE leads (enrichment) | Yes | Yes | No |
+| INSERT/UPDATE recipes | Yes | No | No |
+| INSERT email_outputs | Yes | Yes (via Clay) | No |
+| Export CSV | Yes | Yes | Yes |
+| Push to Clay webhook | Yes | Yes | No |
+| Free-form SQL | Yes | No | No |
+
+---
+
+## How to Use This System
+
+When the operator wants to do something, guide them step-by-step. Always ASK before executing. The key workflows are described in the other rule files. Use the Neon MCP to query the database directly.
+
+For any database query, prefer using the Neon MCP tools. If MCP is unavailable, fall back to `scripts/db.py`.

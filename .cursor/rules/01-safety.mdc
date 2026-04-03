@@ -1,0 +1,31 @@
+---
+description: Database safety rules that apply to ALL interactions regardless of role
+rule-type: always
+---
+
+# Database Safety Rules (ALL ROLES)
+
+## Forbidden Operations
+- NEVER run DELETE, DROP, TRUNCATE, or ALTER statements
+- NEVER run UPDATE without a WHERE clause
+- If someone asks for these, say: "That operation is blocked for safety. Contact Mayank if you need this."
+
+## Query Safety
+- ALWAYS use parameterized queries (not string interpolation)
+- ALWAYS include LIMIT on SELECT queries (max 500 rows)
+- ALWAYS show the query and expected row count before any write
+- ALWAYS get operator confirmation before executing INSERT or UPDATE
+
+## Credential Safety
+- NEVER print connection strings, API keys, or passwords in chat
+- NEVER include credentials in generated code
+
+## Batch Safety
+- Never write more than 500 rows without explicit confirmation
+- For bulk operations, process in batches of 100 and show progress
+- Always preview affected rows before executing
+
+## Role Enforcement
+- **Campaign Operator (Hasan):** READ-ONLY. No writes of any kind. If he asks to modify data, say: "Your role is read-only. Please ask Kuldeep or Mayank."
+- **Clay Operator (Kuldeep):** Can only UPDATE leads (enrichment fields) and push to Clay. Cannot modify clients, segments, or recipes. If he tries, say: "That's a Strategist task. Please ask Mayank."
+- **Strategist (Mayank):** Full access with safety rules still applied.

@@ -1,0 +1,45 @@
+---
+description: Guided workflow for pushing leads to a Clay table via webhook
+rule-type: always
+---
+
+# Workflow: Push to Clay
+
+When the operator says "push to clay", "send to clay", or wants to push leads to a Clay table, follow this flow.
+
+## Prerequisites
+The operator must have pulled leads first (via "pull leads" workflow). If not, redirect them.
+
+## Step 1: Get Webhook URL
+Ask: "Paste the Clay webhook URL"
+Validate: Must start with `https://api.clay.com/` and contain `webhook`.
+
+## Step 2: Confirm Blank Table
+Ask: "Is this a BLANK Clay table (not a template)? Clay auto-creates columns from our JSON keys on blank tables. Templates require manual column mapping."
+
+## Step 3: Preview
+Show what will be sent for 1 sample lead:
+- Identity: email, first_name, last_name, full_name, job_title
+- Company: company_name, company_domain, company_website, industry, employee_count
+- Enrichment: monthly_visits, lcp, tti, aov
+- Verification: email_verified, email_verified_at, is_catchall, mx_provider
+- Segment: segment_id, segment_name
+- Recipe: recipe_id, recipe_version
+- Existing outputs (if any)
+
+Show total count: "Will push {N} leads"
+
+## Step 4: Test Push (1 Lead)
+"Push 1 test lead first?" (recommended)
+POST single JSON object to webhook URL. Show response.
+Ask operator to verify in Clay.
+
+## Step 5: Push All
+Push remaining leads ONE AT A TIME. Show progress every 25.
+Use 0.1s delay between requests.
+
+## Critical Rules
+- ALWAYS send ONE lead per POST (single JSON object, NOT an array)
+- Clay webhook does NOT accept arrays
+- If all pushes fail, the webhook URL is likely wrong
+- Log any failures with the lead email for debugging
