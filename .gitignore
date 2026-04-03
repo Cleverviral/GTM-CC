@@ -14,8 +14,8 @@ __pycache__/
 # Exports (generated CSVs)
 exports/
 
-# PDFs (generated, not source)
-*.pdf
+# PDFs in gtm-from-db (old generated docs)
+gtm-from-db/*.pdf
 
 # Temp
 /tmp/

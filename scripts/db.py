@@ -299,6 +299,112 @@ def export_to_csv(rows, filepath, columns=None):
     return filepath
 
 
+# ── Clay Push Payload Builder ─────────────────────────────
+
+def build_clay_payload(lead, client, segment, recipe, batch_id):
+    """
+    Build the standardized 41-field JSON payload for a single lead push to Clay.
+
+    Args:
+        lead: dict from get_leads_with_outputs() — includes lead fields + existing outputs
+        client: dict with client_id, client_name
+        segment: dict with segment_id, segment_name, segment_tag
+        recipe: dict from get_active_recipe() — or None if no recipe
+        batch_id: str — format: {client_tag}_{segment_tag}_{YYYYMMDD}_{seq}
+
+    Returns: dict ready to POST as JSON to Clay webhook
+    """
+    return {
+        # Identity (7)
+        "lead_id": lead.get("lead_id"),
+        "email": lead.get("email"),
+        "first_name": lead.get("first_name"),
+        "last_name": lead.get("last_name"),
+        "full_name": lead.get("full_name"),
+        "job_title": lead.get("job_title"),
+        "linkedin_profile_url": lead.get("linkedin_profile_url"),
+
+        # Company (5)
+        "company_name": lead.get("company_name"),
+        "company_domain": lead.get("company_domain"),
+        "company_website": lead.get("company_website"),
+        "industry": lead.get("industry"),
+        "employee_count": lead.get("employee_count"),
+
+        # Client + Segment (5)
+        "client_id": str(client.get("client_id", "")),
+        "client_name": client.get("client_name"),
+        "segment_id": segment.get("segment_id"),
+        "segment_name": segment.get("segment_name"),
+        "segment_tag": segment.get("segment_tag"),
+
+        # Verification (5)
+        "email_verified": lead.get("email_verified"),
+        "email_verified_at": str(lead.get("email_verified_at") or ""),
+        "is_catchall": lead.get("is_catchall"),
+        "mx_provider": lead.get("mx_provider"),
+        "has_email_security_gateway": lead.get("has_email_security_gateway", ""),
+
+        # Enrichment (4)
+        "monthly_visits": lead.get("monthly_visits"),
+        "lcp": lead.get("lcp"),
+        "tti": lead.get("tti"),
+        "aov": lead.get("aov"),
+
+        # Recipe (3)
+        "recipe_id": recipe["recipe_id"] if recipe else None,
+        "current_recipe_version": recipe["version"] if recipe else None,
+        "batch_id": batch_id,
+
+        # Existing outputs (12) — from LEFT JOIN in get_leads_with_outputs
+        "last_recipe_version": lead.get("recipe_version"),
+        "existing_subject_line_1": lead.get("subject_line_1"),
+        "existing_subject_line_2": lead.get("subject_line_2"),
+        "existing_email_1_variant_a": lead.get("email_1_variant_a"),
+        "existing_email_1_variant_b": lead.get("email_1_variant_b"),
+        "existing_email_1_variant_c": lead.get("email_1_variant_c"),
+        "existing_email_2_variant_a": lead.get("email_2_variant_a"),
+        "existing_email_2_variant_b": lead.get("email_2_variant_b"),
+        "existing_email_2_variant_c": lead.get("email_2_variant_c"),
+        "existing_email_3_variant_a": lead.get("email_3_variant_a"),
+        "existing_email_3_variant_b": lead.get("email_3_variant_b"),
+        "existing_email_3_variant_c": lead.get("email_3_variant_c"),
+    }
+
+
+def generate_batch_id(client_name, segment_tag):
+    """Generate a batch ID: {client_tag}_{segment_tag}_{YYYYMMDD}_{seq}."""
+    import re
+    client_tag = re.sub(r'[^a-z0-9]', '-', client_name.lower()).strip('-')
+    seg_tag = re.sub(r'[^a-z0-9]', '-', segment_tag.lower()).strip('-')
+    date_str = datetime.now().strftime('%Y%m%d')
+    base = f"{client_tag}_{seg_tag}_{date_str}"
+
+    # Check for existing batches today
+    existing = read_query(
+        "SELECT DISTINCT batch_id FROM email_outputs WHERE batch_id LIKE $1",
+        [f"{base}%"]
+    )
+    seq = len(existing) + 1
+    return f"{base}_{seq:03d}"
+
+
+def push_to_clay_webhook(webhook_url, payload):
+    """POST a single lead payload to a Clay webhook URL. Returns (success, status_code, error)."""
+    import time
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(webhook_url, data=data, method='POST')
+    req.add_header('Content-Type', 'application/json')
+    ctx = ssl.create_default_context()
+    try:
+        resp = urllib.request.urlopen(req, context=ctx)
+        return True, resp.status, None
+    except urllib.error.HTTPError as e:
+        return False, e.code, e.read().decode()
+    except Exception as e:
+        return False, 0, str(e)
+
+
 # ── Quick Test ─────────────────────────────────────────────
 
 if __name__ == '__main__':

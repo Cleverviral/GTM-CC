@@ -1,5 +1,5 @@
 ---
-description: Guided workflow for pushing leads to a Clay table via webhook
+description: Guided workflow for pushing leads to a Clay table via webhook — standardized 41-field payload
 rule-type: always
 ---
 
@@ -17,29 +17,60 @@ Validate: Must start with `https://api.clay.com/` and contain `webhook`.
 ## Step 2: Confirm Blank Table
 Ask: "Is this a BLANK Clay table (not a template)? Clay auto-creates columns from our JSON keys on blank tables. Templates require manual column mapping."
 
-## Step 3: Preview
-Show what will be sent for 1 sample lead:
-- Identity: email, first_name, last_name, full_name, job_title
-- Company: company_name, company_domain, company_website, industry, employee_count
-- Enrichment: monthly_visits, lcp, tti, aov
-- Verification: email_verified, email_verified_at, is_catchall, mx_provider
-- Segment: segment_id, segment_name
-- Recipe: recipe_id, recipe_version
-- Existing outputs (if any)
+## Step 3: Build Payload (41 Fields)
 
-Show total count: "Will push {N} leads"
+Every lead pushed to Clay MUST include all 41 standard fields. Use `get_leads_with_outputs()` to pull leads with their existing email outputs.
 
-## Step 4: Test Push (1 Lead)
-"Push 1 test lead first?" (recommended)
-POST single JSON object to webhook URL. Show response.
-Ask operator to verify in Clay.
+**Required fields per lead:**
 
-## Step 5: Push All
-Push remaining leads ONE AT A TIME. Show progress every 25.
-Use 0.1s delay between requests.
+**Identity (7):** lead_id, email, first_name, last_name, full_name, job_title, linkedin_profile_url
+
+**Company (5):** company_name, company_domain, company_website, industry, employee_count
+
+**Client + Segment (5):** client_id, client_name, segment_id, segment_name, segment_tag
+
+**Verification (5):** email_verified, email_verified_at, is_catchall, mx_provider, has_email_security_gateway
+
+**Enrichment (4):** monthly_visits, lcp, tti, aov
+
+**Recipe (3):** recipe_id, current_recipe_version, batch_id
+
+**Existing Outputs (12):** last_recipe_version, existing_subject_line_1/2, existing_email_1/2/3_variant_a/b/c
+
+**Batch ID format:** `{client_tag}_{segment_tag}_{YYYYMMDD}_{seq}`
+
+## Step 4: Preview
+Show:
+- Client + Segment + Recipe version
+- Batch ID
+- Total leads
+- Leads with existing emails (Clay will skip regeneration if recipe version unchanged)
+- Leads needing generation
+- First lead's full JSON as example
+
+## Step 5: Test Push (1 Lead)
+POST single JSON object. Ask operator to verify **all 41 columns** appear in Clay.
+Specifically check: client_id, client_name, segment_id, recipe_id, batch_id exist.
+
+## Step 6: Push All
+Push remaining leads ONE AT A TIME. Progress every 25. 0.1s delay.
+
+## Step 7: Summary
+Show push results + next steps:
+1. Verify columns in Clay
+2. Set up verification waterfall
+3. Add HTTP Column 1 (verification push-back)
+4. Add decision logic (needs_enrichment, needs_generation)
+5. Add enrichment columns per recipe
+6. Add HTTP Column 2 (enrichment push-back)
+7. Add email generation columns per recipe
+8. Add HTTP Column 3 (email output push-back)
+9. Test 3 leads → verify HTTP columns fire correctly
+10. Run full table
 
 ## Critical Rules
 - ALWAYS send ONE lead per POST (single JSON object, NOT an array)
+- All 41 fields must be present — use null for missing values
+- client_id, segment_id, recipe_id, batch_id are CRITICAL — HTTP Column 3 needs them to INSERT email_outputs
 - Clay webhook does NOT accept arrays
 - If all pushes fail, the webhook URL is likely wrong
-- Log any failures with the lead email for debugging
