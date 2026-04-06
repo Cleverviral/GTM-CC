@@ -11,8 +11,8 @@ Everything runs on ONE Neon database. Five tables.
 
 ## Table 1: `clients`
 **Source:** Tally onboarding form webhook
-**Updated by:** Strategist (manual approval), Tally webhook (auto)
-**Read by:** Strategist (recipe creation context), Dashboard (all roles)
+**Updated by:** Copy Strategist (manual approval), Tally webhook (auto)
+**Read by:** Copy Strategist (recipe creation context), Dashboard (all roles)
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -46,8 +46,8 @@ Everything runs on ONE Neon database. Five tables.
 ---
 
 ## Table 2: `segments`
-**Source:** Strategist creates when defining ICP segments
-**Updated by:** Strategist
+**Source:** Copy Strategist creates when defining ICP segments
+**Updated by:** Copy Strategist
 **Read by:** All roles (filtering leads, recipes, outputs)
 
 | Column | Type | Description |
@@ -55,10 +55,14 @@ Everything runs on ONE Neon database. Five tables.
 | segment_id | serial PK | Auto-generated |
 | client_id | int FK → clients | Which client |
 | segment_name | text | e.g., "Retail", "Agency", "Enterprise" |
+| segment_tag | text | Human-readable label |
+| description | text | |
 | target_industry | text | e.g., "Retail ecommerce" |
 | target_persona | text | e.g., "VP Marketing, Director of Growth" |
 | target_pain_points | text | Key pain points for this segment |
 | icp_criteria | text | How to identify leads for this segment |
+| value_prop | text | Value proposition for this segment |
+| leadlist_context | text | Targeting criteria for this segment |
 | status | text | active / paused / archived |
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
@@ -130,9 +134,9 @@ These are separate rows. No conflict. DNC is per-client.
 ---
 
 ## Table 4: `recipes`
-**Source:** Strategist creates via Claude Code + email-approach-generator skill
-**Updated by:** Strategist (create, version, deactivate)
-**Read by:** Clay operator (instructions), Campaign operator (reuse check), Strategist (performance review)
+**Source:** Copy Strategist creates via Claude Code + email-approach-generator skill
+**Updated by:** Copy Strategist (create, version, deactivate)
+**Read by:** Clay operator (instructions), Campaign operator (reuse check), Copy Strategist (performance review)
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -148,9 +152,7 @@ These are separate rows. No conflict. DNC is per-client.
 | parent_recipe_id | int FK → recipes | Links to previous version (null for v1) |
 | | | |
 | **Approach Content** | | |
-| approach_content | text | Full email approach markdown |
-| value_prop | text | Value prop text this recipe uses |
-| lead_list_context | text | Lead list context text |
+| approach_content | text | Full email approach markdown (reference, NOT pushed to Clay) |
 | | | |
 | **Data Requirements** | | |
 | data_variables_required | text[] | e.g., ARRAY['aov', 'review_count'] |
@@ -188,7 +190,7 @@ The approach selector formula in Clay picks which recipe each lead gets based on
 ## Table 5: `email_outputs`
 **Source:** Clay push-back (after running recipe) + Sequencer API sync (reply data)
 **Updated by:** Clay push-back script (emails), Campaign operator (sent status), Sequencer API sync (replies)
-**Read by:** Campaign operator (CSV export, reuse check), Strategist (performance queries)
+**Read by:** Campaign operator (CSV export, reuse check), Copy Strategist (performance queries)
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -204,13 +206,14 @@ The approach selector formula in Clay picks which recipe each lead gets based on
 | recipe_version | int | Which version of the recipe |
 | | | |
 | **Generated Content** | | |
-| subject_line | text | |
-| email_1 | text | |
-| email_2 | text | |
-| email_3 | text | |
+| selected_approach | text | Which approach ran |
+| email_1_variant_a | text | Primary email 1 |
+| email_1_variant_b | text | A/B variant |
+| email_2_variant_a | text | Primary email 2 |
+| email_2_variant_b | text | A/B variant |
+| email_3_variant_a | text | Primary email 3 |
+| email_3_variant_b | text | A/B variant |
 | company_summary | text | Website scrape output |
-| research_report | text | Researcher output (if ran) |
-| spam_flags | text | Flagged spam words |
 | | | |
 | **Batch Tracking** | | |
 | batch_id | text | Groups leads processed together |
@@ -305,7 +308,7 @@ The Clay operator reads the `clay_instructions` field from the active recipe(s) 
 | 23 | Approach Selector | Formula | Checks data availability → picks recipe for each lead |
 | 24 | Selected Recipe Text | Formula | Pulls the right approach_content based on selector |
 | 25 | Researcher | Claygent | Web research for signals. Only runs when recipe requires it. |
-| 26 | Copywriter | Use AI (GPT-4o-mini) | Writes email_1, email_2, email_3, subject_line |
+| 26 | Copywriter | Use AI (GPT-4o-mini) | Writes email_1/2/3_variant_a/b |
 | 27 | Style Checker | Use AI (GPT-4o-mini) | Fixes spam words, humanizes, breaks linear flow |
 | 28 | Recipe Name | Formula | Which recipe this lead got (for tracking) |
 | 29 | Recipe Version | Formula | Which version (for tracking) |
@@ -329,18 +332,18 @@ After Clay finishes processing, the operator exports a CSV. The push-back script
 | Field | Source Clay Column |
 |-------|-------------------|
 | lead_id | Column 1 (lead_id from import) |
-| recipe_name | Column 28 (which recipe this lead got) |
+| recipe_id | Which recipe generated this |
 | recipe_version | Column 29 (version number) |
-| subject_line | From copywriter output |
-| email_1 | From style checker output (styled version) |
-| email_2 | From copywriter output |
-| email_3 | From copywriter output |
+| selected_approach | Which approach ran |
+| email_1_variant_a | From style checker output (styled version) |
+| email_1_variant_b | A/B variant |
+| email_2_variant_a | From copywriter output |
+| email_2_variant_b | A/B variant |
+| email_3_variant_a | From copywriter output |
+| email_3_variant_b | A/B variant |
 | company_summary | Column 22 (website scrape) |
-| research_report | Column 25 (researcher output, if ran) |
-| spam_flags | From style checker |
 | batch_id | Generated at push-back time (e.g., "hector-retail-2026-03-28") |
-| status | "generated" |
-| client_id, segment_id, segment_name | From import columns |
+| client_id, segment_id | From import columns |
 
 **Update 2: → leads table (UPDATE existing rows)**
 
@@ -363,7 +366,7 @@ After Clay finishes processing, the operator exports a CSV. The push-back script
 
 ---
 
-## STRATEGIST'S DAY (Mayank)
+## COPY STRATEGIST'S DAY (Mayank)
 
 ### Morning: Weekly Planning (Monday, 30 min)
 
@@ -408,7 +411,7 @@ Claude Code queries Neon (leads table):
 
 → Runs email-approach-generator skill
 → Uses Owner.com context from Neon
-→ Strategist brainstorms with Claude Code
+→ Copy Strategist brainstorms with Claude Code
 → Creates recipe: "Commission Savings"
 → Declares: needs AOV + delivery_platform data
 → Writes Clay instructions:
@@ -427,7 +430,7 @@ Claude Code queries Neon (leads table):
     "Lead 1: Marco, Sal's Catering — email about commission savings"
     "Lead 2: Sofia, Casa Catering — email about direct ordering"
     ...
-→ Strategist reviews, gives feedback
+→ Copy Strategist reviews, gives feedback
 → "The opener is too aggressive. Soften the proxy language."
 → Claude Code adjusts approach_content
 → Reruns on 10 leads
@@ -457,7 +460,7 @@ Page Speed v1:      500 sent → 0.8% reply  ← underperforming
 
 → "Show me Page Speed v1 approach content"
 → Claude Code pulls from Neon recipes table
-→ Strategist edits the opener
+→ Copy Strategist edits the opener
 → Tests on 10 leads
 → "Better. Save as Page Speed v2."
 
@@ -589,7 +592,7 @@ Campaign operator decision: same emails, new infrastructure.
 Action:
   1. Query Neon email_outputs:
      "All email_outputs for BrightFlow Enterprise, campaign #14, status=sent"
-     → 500 leads with their email_1, email_2, subject_line
+     → 500 leads with their email_1/2/3_variant_a/b
   2. Export CSV from Neon (instant — emails already stored)
   3. NO Clay run needed. No regeneration. No cost.
   4. Upload to Smartlead → NEW campaign with fresh sending domains
@@ -606,7 +609,7 @@ Time: 10 min. Zero Clay credits.
 ### Scenario D: New Client, First Campaign Ever (Monthly — 5% of days)
 
 ```
-"New client FreshMart just onboarded. Strategist created 2 recipes.
+"New client FreshMart just onboarded. Copy Strategist created 2 recipes.
 Data team verified 2,000 leads. First campaign."
 
 Action:
@@ -897,7 +900,7 @@ Tracking:
   → Insight: Page Speed works better for this type of lead
 ```
 
-## Scenario: Strategist Wants to A/B Test a New Recipe
+## Scenario: Copy Strategist Wants to A/B Test a New Recipe
 
 ```
 "I want to test 'Brand Authority' against 'ROI Calculator'
@@ -936,7 +939,7 @@ Impact:
 ```
 Client "BadFit Inc" churns.
 
-Strategist:
+Copy Strategist:
   → Update clients table: client_status = 'churned'
   → All recipes for this client: status → 'inactive'
   → All leads remain in DB (historical data, don't delete)
@@ -995,7 +998,7 @@ Prevention:
 
 | Role | Daily Tasks | Time/Day | Tools Used |
 |------|------------|----------|------------|
-| Strategist | Review performance, update recipes, create new recipes, test on samples | 1-2 hours (across 30 clients, not per client) | Claude Code + Neon DB |
+| Copy Strategist | Review performance, update recipes, create new recipes, test on samples | 1-2 hours (across 30 clients, not per client) | Claude Code + Neon DB |
 | Campaign Operator | Check Slack alerts, run reuse checks, export CSVs, upload to sequencer, track sent status | 2-3 hours | Dashboard + Neon + Sequencers |
 | Clay Operator | Read recipe instructions, set up Clay tables, import leads, run tables, push results back | 3-4 hours (3-5 Clay runs per day) | Clay + Neon + push-back script |
 

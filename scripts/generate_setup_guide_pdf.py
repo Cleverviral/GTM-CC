@@ -173,15 +173,20 @@ def build():
     story.append(Spacer(1, 6))
 
     # Step 4
-    story.append(_step_header("Step 4: Open Claude and Pick Your Role"))
+    story.append(_step_header("Step 4: Add the Claude Code Plugin in Cursor"))
     story.append(Paragraph(
-        "In Cursor, open the AI chat panel:", body))
+        "You need to add the <b>Claude Code</b> plugin to Cursor. This is what lets you talk to Claude inside Cursor.", body))
     story.append(Paragraph(
-        "<b>Mac:</b> press <font face='Courier'>Cmd + L</font>", bullet_style))
+        "<b>1.</b> Open Cursor's Extensions panel: click the Extensions icon in the left sidebar "
+        "(or press <font face='Courier'>Cmd+Shift+X</font> on Mac / <font face='Courier'>Ctrl+Shift+X</font> on Windows)", bullet_style))
     story.append(Paragraph(
-        "<b>Windows:</b> press <font face='Courier'>Ctrl + L</font>", bullet_style))
+        "<b>2.</b> Search for <b>\"Claude Code\"</b> and install the plugin", bullet_style))
+    story.append(Paragraph(
+        "<b>3.</b> Once installed, Mayank will help you log into the shared Claude account "
+        "(this is a one-time setup)", bullet_style))
     story.append(Spacer(1, 4))
     story.append(Paragraph(
+        "After the plugin is installed and logged in, open the Claude Code panel from the sidebar. "
         "Type <font face='Courier'>/whoami</font> and press Enter. Claude will ask you to pick your role:", body))
 
     role_data = [

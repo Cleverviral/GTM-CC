@@ -60,14 +60,7 @@ Guide through each section:
 > Step-by-step for setting up the Clay table with this recipe.
 > Include: which columns to create, verification setup, formula logic, HTTP column config.
 
-### 3e: Sample Email ID
-> **What is the Sample Email ID from the Notion repo?**
-> This is the ID from the sample email repo in Notion. The campaign operator adds it to the campaign name so the reporting dashboard can link the campaign to the email copy.
-> (e.g., "SE-0042")
->
-> If you haven't created the sample email page yet, you can add this later.
-
-### 3f: Notes
+### 3e: Notes
 > **What changed in this version?** (for version tracking)
 
 ## Step 4: Preview
@@ -81,8 +74,8 @@ Show the complete recipe in a clean format. Ask for confirmation.
 UPDATE recipes SET status = 'inactive', updated_at = NOW() WHERE segment_id = $1 AND status = 'active';
 
 -- Insert new recipe
-INSERT INTO recipes (client_id, segment_id, version, status, approach_content, data_variables_required, clay_template_name, clay_instructions, sample_email_id, notes)
-VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8, $9);
+INSERT INTO recipes (client_id, segment_id, version, status, approach_content, data_variables_required, clay_template_name, clay_instructions, notes)
+VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8);
 ```
 
 Use `write_query()` with confirmation.

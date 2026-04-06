@@ -93,7 +93,6 @@ GTM-CC is a cold email campaign system with:
 | data_variables_required | text[] | What data the recipe needs |
 | clay_template_name | text | Saved Clay template to use |
 | clay_instructions | text | Step-by-step for Clay operator |
-| sample_email_id | text | ID from Notion sample email repo (for campaign naming + dashboard) |
 | notes | text | What changed in this version |
 
 ### email_outputs

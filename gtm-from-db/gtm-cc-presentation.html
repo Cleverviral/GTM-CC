@@ -122,7 +122,7 @@
     <span class="tag tag-purple">CLAUDE CODE</span>
     <span class="tag tag-blue">TESTED &amp; WORKING</span>
   </div>
-  <p style="position:absolute;bottom:30px;left:80px;font-size:12px;color:#3f3f46">April 2026 &bull; Architecture v3.1</p>
+  <p style="position:absolute;bottom:30px;left:80px;font-size:12px;color:#3f3f46">April 2026 &bull; Architecture v4.0</p>
 </div>
 
 <!-- ============================================================ -->
@@ -162,7 +162,7 @@
   <p class="sub">One Neon PostgreSQL database sits at the center. Everything flows through it. Clay becomes disposable processing &mdash; not storage.</p>
 
   <div class="code" style="max-width:900px;font-size:14px;line-height:2.2">
-    <b>STRATEGIST</b> <span class="dim">(creates recipes in Claude Code)</span><br>
+    <b>COPY STRATEGIST</b> <span class="dim">(creates recipes in Claude Code)</span><br>
     &nbsp;&nbsp;&nbsp;&nbsp;&darr; <span class="p">save recipe</span><br>
     <b>NEON DB</b> <span class="dim">(5 tables &mdash; single source of truth)</span><br>
     &nbsp;&nbsp;&nbsp;&nbsp;&darr; <span class="o">push leads (Claude Code &rarr; Clay webhook)</span><br>
@@ -187,7 +187,7 @@
     <div class="card card-blue">
       <div class="num accent">3</div>
       <h3>Roles</h3>
-      <p>Strategist, Clay Operator, Campaign Operator</p>
+      <p>Copy Strategist, Clay Operator, Campaign Operator</p>
     </div>
   </div>
 </div>
@@ -211,7 +211,7 @@
     <tr>
       <td><b style="color:#60a5fa">segments</b></td>
       <td>Registry of segments per client</td>
-      <td>segment_id (PK), segment_name, segment_tag</td>
+      <td>segment_id (PK), segment_name, segment_tag, value_prop, leadlist_context</td>
       <td>2&ndash;5 per client</td>
     </tr>
     <tr>
@@ -223,13 +223,13 @@
     <tr>
       <td><b style="color:#60a5fa">recipes</b></td>
       <td>One per client-segment. Versioned.<br>Any change = new row.</td>
-      <td>approach_content, value_prop, clay_instructions,<br>version, status (active/inactive)</td>
+      <td>approach_content, clay_template_name, clay_instructions,<br>data_variables_required, version, status (active/inactive)</td>
       <td>~200&ndash;400</td>
     </tr>
     <tr>
       <td><b style="color:#60a5fa">email_outputs</b></td>
       <td>Every generated email. Never overwritten.<br>Enables reuse + version comparison.</td>
-      <td>subject_line_1/2, email_1/2/3_variant_a/b/c,<br>selected_approach, recipe_version, batch_id</td>
+      <td>email_1/2/3_variant_a/b,<br>selected_approach, recipe_version, batch_id</td>
       <td>500K&ndash;1M+</td>
     </tr>
   </table>
@@ -250,7 +250,7 @@
 
   <div class="cards cards-3">
     <div class="card card-purple">
-      <h3>Strategist</h3>
+      <h3>Copy Strategist</h3>
       <p style="font-size:14px;color:#e4e4e7;margin-bottom:12px">Creates recipes. Owns strategy. Reviews performance.</p>
       <ul class="bullets">
         <li><div class="bullet-icon" style="background:#a78bfa"></div>Pull client context from Neon</li>
@@ -298,8 +298,8 @@
   <div class="flow">
     <div class="fstep card-purple">
       <h3 class="purple">1. Create Recipe</h3>
-      <p>Strategist creates recipe in Claude Code. Tests on samples. Saves to Neon (versioned).</p>
-      <span class="tag tag-purple">Strategist</span>
+      <p>Copy Strategist creates recipe in Claude Code. Tests on samples. Saves to Neon (versioned).</p>
+      <span class="tag tag-purple">Copy Strategist</span>
     </div>
     <div class="farr">&rarr;</div>
     <div class="fstep card-orange">
@@ -310,7 +310,7 @@
     <div class="farr">&rarr;</div>
     <div class="fstep card-orange">
       <h3 class="orange">3. Push to Clay</h3>
-      <p>Claude Code POSTs one lead at a time to Clay webhook URL. ~35 columns per lead.</p>
+      <p>Claude Code POSTs one lead at a time to Clay webhook URL. 38 fields per lead.</p>
       <span class="tag tag-orange">Claude Code</span>
     </div>
     <div class="farr">&rarr;</div>
@@ -369,8 +369,7 @@
       <h3>HTTP Column 3<br><span style="font-size:12px;color:#71717a;font-weight:400">Email Outputs</span></h3>
       <p style="margin-top:12px"><b style="color:#a78bfa">Runs for:</b> REGENERATE leads only<br><br>
       <b style="color:#e4e4e7">Inserts:</b><br>
-      &bull; subject_line_1, subject_line_2<br>
-      &bull; email_1/2/3 &times; variant_a/b/c<br>
+      &bull; email_1/2/3 &times; variant_a/b<br>
       &bull; selected_approach<br>
       &bull; company_summary<br>
       &bull; recipe_id + recipe_version<br>
@@ -437,7 +436,7 @@
         &bull; Claude Code queries Neon for leads by segment_id<br>
         &bull; Joins leads + segments + recipes + existing email_outputs<br>
         &bull; POSTs one lead at a time to Clay webhook URL<br>
-        &bull; ~35 columns per lead (identity, company, enrichment, recipe context, existing outputs)<br>
+        &bull; 38 fields per lead (identity, company, enrichment, recipe context, existing outputs)<br>
         &bull; Clay auto-creates columns from JSON keys<br><br>
         <b style="color:#4ade80">Tested with 1,000 Speedsize leads across 4 segments</b>
       </p>
@@ -584,7 +583,7 @@
   <p class="sub">The complete data flow, end to end.</p>
 
   <div class="code" style="max-width:950px;font-size:13px;line-height:2.4">
-    <span class="p">STRATEGIST (Claude Code)</span><br>
+    <span class="p">COPY STRATEGIST (Claude Code)</span><br>
     &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;Creates recipes, tests on samples, saves to Neon<br>
     &nbsp;&nbsp;&nbsp;&nbsp;&darr;<br>
     <span class="g">NEON DB</span> &mdash; clients | segments | leads | recipes | email_outputs<br>

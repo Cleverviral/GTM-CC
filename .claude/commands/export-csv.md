@@ -59,23 +59,7 @@ Create the exports/ directory if it doesn't exist.
 
 > **Exported {count} rows to `{filepath}`**
 
-## Step 6: Show Campaign Naming Info
-
-For option 1 (full batch), after exporting, pull the recipe's sample_email_id:
-
-```python
-recipe = read_query("SELECT sample_email_id, clay_template_name FROM recipes WHERE segment_id = $1 AND status = 'active' LIMIT 1", [segment_id])
-```
-
-If sample_email_id exists, show:
-> **Campaign Naming:**
-> - Sample Email ID: **{sample_email_id}**
-> - Suggested campaign name: `{client_name}_{segment_tag}_{sample_email_id}`
->
-> Add the sample_email_id to your campaign name in the sequencer so the reporting dashboard can link to the email copy.
-
 ## Important
 - The 4 custom fields (segment_id, recipe_id, recipe_version, selected_approach) MUST be included
 - Verify email_verified = 'true' or 'valid' before including in a campaign batch
 - Never include unverified leads in a campaign export
-- Always show the sample_email_id and suggested campaign name format
