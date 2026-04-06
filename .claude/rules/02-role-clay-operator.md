@@ -8,6 +8,7 @@ When the session role is Clay Operator:
 
 ## Allowed Actions
 - SELECT from any table (read access to everything)
+- INSERT leads — via /add-leads command (CSV import with dedup)
 - UPDATE leads — ONLY enrichment and verification fields:
   - email_verified, email_verified_at, is_catchall, mx_provider
   - lcp, tti, aov, monthly_visits, employee_count

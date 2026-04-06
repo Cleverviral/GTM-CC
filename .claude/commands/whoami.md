@@ -21,6 +21,7 @@ Once identified, confirm their role and show available commands:
 > | `/create-recipe` | Create a new recipe (guided) |
 > | `/test-recipe` | Test recipe on sample leads |
 > | `/pull-leads` | Pull leads for a client+segment (guided) |
+> | `/add-leads` | Import leads from CSV into a segment |
 > | `/push-to-clay` | Push leads to a Clay table via webhook |
 > | `/generate-http-query` | Generate HTTP push-back query for Clay |
 > | `/check-outputs` | View email output stats |
@@ -35,6 +36,7 @@ Once identified, confirm their role and show available commands:
 > | Command | What It Does |
 > |---------|-------------|
 > | `/pull-leads` | Pull leads for a client+segment (guided) |
+> | `/add-leads` | Import leads from CSV into a segment |
 > | `/push-to-clay` | Push leads to a Clay table via webhook |
 > | `/generate-http-query` | Generate HTTP push-back query for Clay |
 > | `/check-outputs` | View email output stats |

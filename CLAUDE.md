@@ -14,8 +14,8 @@ At the **start of every conversation**, ask:
 Once identified, enforce that role's permissions for the entire session. Refer to the permissions matrix below. If someone tries to do something outside their role, politely redirect them.
 
 After identifying the role, show their available commands:
-- Copy Strategist: `/create-recipe`, `/test-recipe`, `/pull-leads`, `/push-to-clay`, `/export-csv`, `/check-outputs`, `/generate-http-query` + free-form SQL
-- Clay Operator: `/pull-leads`, `/push-to-clay`, `/export-csv`, `/generate-http-query`
+- Copy Strategist: `/create-recipe`, `/test-recipe`, `/pull-leads`, `/add-leads`, `/push-to-clay`, `/export-csv`, `/check-outputs`, `/generate-http-query` + free-form SQL
+- Clay Operator: `/pull-leads`, `/add-leads`, `/push-to-clay`, `/export-csv`, `/generate-http-query`
 - Campaign Operator: `/export-csv`, `/check-outputs`
 
 ---
@@ -93,6 +93,7 @@ GTM-CC is a cold email campaign system with:
 | data_variables_required | text[] | What data the recipe needs |
 | clay_template_name | text | Saved Clay template to use |
 | clay_instructions | text | Step-by-step for Clay operator |
+| sample_email_id | text | ID from Notion sample email repo (for campaign naming + dashboard) |
 | notes | text | What changed in this version |
 
 ### email_outputs
@@ -194,6 +195,7 @@ Approaches live in saved Clay templates, NOT in the webhook payload. The recipe 
 | `/create-recipe` | Create a new recipe (guided flow) |
 | `/test-recipe` | Test a recipe on sample leads (dry run) |
 | `/pull-leads` | Pull leads for a client+segment with guided filters |
+| `/add-leads` | Import leads from CSV into a segment |
 | `/push-to-clay` | Push leads to Clay table via webhook (38 fields) |
 | `/export-csv` | Export leads + emails as CSV |
 | `/check-outputs` | View email output stats for a client+segment |
@@ -203,6 +205,7 @@ Approaches live in saved Clay templates, NOT in the webhook payload. The recipe 
 | Command | What It Does |
 |---------|-------------|
 | `/pull-leads` | Pull leads for a client+segment with guided filters |
+| `/add-leads` | Import leads from CSV into a segment |
 | `/push-to-clay` | Push leads to Clay table via webhook (38 fields) |
 | `/export-csv` | Export leads + emails as CSV |
 | `/generate-http-query` | Generate HTTP push-back query (enrichment or email outputs) |
