@@ -2,67 +2,61 @@
 
 ## What is this?
 
-GTM-CC is our database-powered cold email campaign system. Instead of managing hundreds of Clay tables, everything lives in one Neon PostgreSQL database. You interact with it through Claude Code using simple commands.
+GTM-CC is a database-powered cold email campaign system. Instead of managing dozens of Clay tables and spreadsheets, everything lives in one Neon PostgreSQL database. You interact with it through Cursor (or Claude Code) using simple slash commands.
 
-## How to Access
+## How to Set Up
 
-### Option A: Claude Code on the Web (Recommended)
-1. Go to [claude.ai/code](https://claude.ai/code)
-2. Connect the GTM-CC GitHub repository
-3. Start a conversation — Claude will ask who you are
-4. Use your role's commands (listed below)
+See the **GTM-CC Setup Guide** (`docs/gtm-cc-setup-guide.pdf`) for step-by-step instructions.
 
-### Option B: Claude Code in Terminal
-1. Open Terminal
-2. Navigate to the GTM-CC folder
-3. Run `claude` to start
-4. Claude will ask who you are
+Quick version:
+1. Install Cursor from cursor.com
+2. Clone the repo: `git clone https://github.com/cleverviral-mayank/GTM-CC.git`
+3. Open the folder in Cursor
+4. Download the `.env` file from Google Drive → drop it in the GTM-CC folder
+5. Type `/whoami` in the AI chat → pick your role
 
-## First Steps
+## Roles
 
-When you start a session, Claude will ask:
+| # | Role | Access Level |
+|---|------|-------------|
+| 1 | Copy Strategist | Full access — admin role |
+| 2 | Clay Operator | Pull leads, push to Clay, enrichment, export |
+| 3 | Campaign Operator | Check outputs, export CSV (read-only) |
 
-> "Who am I working with today?"
-> 1. Kuldeep — Clay Operator
-> 2. Hasan — Campaign Operator
-> 3. Mayank — Strategist
+## Available Commands
 
-Pick your role. Claude will show your available commands and enforce your permissions.
-
-## Your Commands
-
-### Clay Operator (Kuldeep)
-| Type This | What Happens |
-|-----------|-------------|
-| `/pull-leads` | Step-by-step guide to select client, segment, and pull leads |
-| `/push-to-clay` | Push pulled leads to your Clay table via webhook |
-| `/check-batch` | See recent batch history |
+### Clay Operator
+| Command | What It Does |
+|---------|-------------|
+| `/pull-leads` | Pull leads for a client + segment (guided) |
+| `/push-to-clay` | Push leads to a Clay table via webhook |
+| `/generate-http-query` | Generate HTTP push-back query for Clay columns |
+| `/check-outputs` | View email output stats |
 | `/export-csv` | Export leads + emails as CSV |
 
-### Campaign Operator (Hasan)
-| Type This | What Happens |
-|-----------|-------------|
-| `/get-batch` | Download a ready batch for sequencer upload |
-| `/check-outputs` | View email output stats for any client/segment |
-| `/reuse-emails` | Pull existing emails when you need fresh infrastructure |
+### Campaign Operator
+| Command | What It Does |
+|---------|-------------|
+| `/check-outputs` | View email output stats |
+| `/export-csv` | Export leads + emails as CSV |
 
-### Strategist (Mayank)
-All of the above, plus:
-| Type This | What Happens |
-|-----------|-------------|
+### Copy Strategist (all of the above, plus:)
+| Command | What It Does |
+|---------|-------------|
 | `/create-recipe` | Create a new email recipe |
 | `/test-recipe` | Test a recipe on sample leads |
-| `/review-performance` | View stats and batch history |
+
+The Copy Strategist can also run custom database queries in plain English.
 
 ## Key Things to Know
 
-1. **You can't break anything.** The system has safety guardrails. Dangerous operations are blocked.
-2. **Claude asks the right questions.** You don't need to know SQL. Just follow the prompts.
-3. **Everything is tracked.** Every email output is stored with recipe version, batch ID, and approach.
-4. **Read-only is safe.** Campaign operators can only read data — no accidental modifications possible.
+1. **You can't break anything.** Dangerous operations are blocked. Campaign Operator is fully read-only.
+2. **Claude asks the right questions.** You don't need SQL. Just follow the prompts.
+3. **Everything is tracked.** Every email output is stored with recipe version and approach name.
+4. **Keeping updated:** Run `git pull` in the terminal to get the latest commands.
 
 ## Need Help?
 
 - Type `/whoami` to see your role and commands
 - Ask Claude "what can I do?" for a quick reference
-- If something feels wrong, stop and ask Mayank
+- If something feels wrong, stop and ask the Copy Strategist

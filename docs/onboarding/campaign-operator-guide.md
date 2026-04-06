@@ -1,4 +1,4 @@
-# Campaign Operator Guide (Hasan)
+# Campaign Operator Guide
 
 ## Your Role
 
@@ -8,14 +8,14 @@ You take ready batches and make campaigns live. You upload to sequencers, monito
 
 ## Daily Workflow
 
-### 1. Get a Ready Batch
+### 1. Export a Batch
 ```
-/get-batch
+/export-csv
 ```
 Claude will ask:
 - Which client?
 - Which segment?
-- Shows available batches
+- What to export (full batch, leads only, or email outputs only)
 
 Then downloads a CSV ready for your sequencer.
 
@@ -23,10 +23,10 @@ Then downloads a CSV ready for your sequencer.
 
 The CSV includes:
 - Lead data: email, name, company, job title
-- Email content: 2 subject lines, 9 email variants (3 emails × 3 variants each)
+- Email content: 6 email variants (3 emails x 2 variants each)
 - **Custom fields:** segment_id, recipe_id, recipe_version, selected_approach
 
-**The custom fields are critical.** They enable performance tracking. Always include them.
+**The custom fields are critical.** They enable performance tracking. Always include them as custom variables in your sequencer.
 
 ### 3. Monitor Campaign
 
@@ -35,28 +35,20 @@ Use your sequencer dashboard (Smartlead / Instantly) to track:
 - Reply rates
 - Domain health
 
-### 4. Bad Infrastructure? No Problem
-
-If a campaign has 0% reply (domain/IP issues):
-```
-/reuse-emails
-```
-This pulls the **exact same emails** from the database. Upload to a new sequencer campaign with fresh domains. Zero Clay cost.
-
-## What You CAN'T Do
-- **Can't modify any data** → Your access is read-only
-- **Can't push to Clay** → That's Kuldeep's job
-- **Can't create recipes** → That's Mayank's job
-- **Can't run free SQL** → Use the commands
-
 ## Check Email Outputs
 
 Want to review what's been generated?
 ```
 /check-outputs
 ```
-Browse email outputs by client, segment, batch, or search by lead email.
+Browse email outputs by client, segment, recipe version, or search by lead email.
+
+## What You CAN'T Do
+- **Can't modify any data** → Your access is read-only
+- **Can't push to Clay** → That's the Clay Operator's job
+- **Can't create recipes** → That's the Copy Strategist's job
+- **Can't run free SQL** → Use the slash commands
 
 ## Need Help?
-- For batch issues → ask Kuldeep (Clay Operator)
-- For recipe/strategy issues → ask Mayank (Strategist)
+- For batch/export issues → ask the Clay Operator
+- For recipe/strategy issues → ask the Copy Strategist
