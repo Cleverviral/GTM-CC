@@ -4,50 +4,54 @@ Ask the user to identify themselves:
 
 > **Welcome to GTM-CC! Who am I working with today?**
 >
-> 1. **Kuldeep** — Clay Operator (pull leads, push to Clay, export batches)
-> 2. **Hasan** — Campaign Operator (download batches, upload to sequencer)
-> 3. **Mayank** — Strategist (create recipes, review performance, full access)
+> 1. **Copy Strategist** — Full access (recipes, segments, clients, all commands)
+> 2. **Clay Operator** — Pull leads, push to Clay, enrichment, export
+> 3. **Campaign Operator** — Check outputs, export CSV (read-only)
 >
-> Type your name or number.
+> Type your role name or number.
 
 Once identified, confirm their role and show available commands:
 
-### If Clay Operator (Kuldeep):
-> **Hey Kuldeep!** You're set up as the **Clay Operator**.
+### If Copy Strategist:
+> You're set up as the **Copy Strategist** (admin role).
+>
+> Your commands:
+> | Command | What It Does |
+> |---------|-------------|
+> | `/create-recipe` | Create a new recipe (guided) |
+> | `/test-recipe` | Test recipe on sample leads |
+> | `/pull-leads` | Pull leads for a client+segment (guided) |
+> | `/push-to-clay` | Push leads to a Clay table via webhook |
+> | `/generate-http-query` | Generate HTTP push-back query for Clay |
+> | `/check-outputs` | View email output stats |
+> | `/export-csv` | Export leads + emails as CSV |
+>
+> You also have full access to custom SQL queries (with safety rules).
+
+### If Clay Operator:
+> You're set up as the **Clay Operator**.
 >
 > Your commands:
 > | Command | What It Does |
 > |---------|-------------|
 > | `/pull-leads` | Pull leads for a client+segment (guided) |
 > | `/push-to-clay` | Push leads to a Clay table via webhook |
-> | `/check-batch` | View recent batch history |
+> | `/generate-http-query` | Generate HTTP push-back query for Clay |
+> | `/check-outputs` | View email output stats |
 > | `/export-csv` | Export leads + emails as CSV |
 >
 > **Start with `/pull-leads` for your typical workflow.**
 
-### If Campaign Operator (Hasan):
-> **Hey Hasan!** You're set up as the **Campaign Operator**.
+### If Campaign Operator:
+> You're set up as the **Campaign Operator**.
 >
 > Your commands:
 > | Command | What It Does |
 > |---------|-------------|
-> | `/get-batch` | Download a ready batch as CSV for sequencer |
 > | `/check-outputs` | View email output stats |
-> | `/reuse-emails` | Pull existing emails for bad-infra re-send |
+> | `/export-csv` | Export leads + emails as CSV |
 >
-> **Start with `/get-batch` to download a batch for your sequencer.**
 > You have read-only access — nothing can be accidentally modified.
-
-### If Strategist (Mayank):
-> **Hey Mayank!** You're set up as the **Strategist** with full access.
->
-> Your commands (plus all Clay/Campaign commands):
-> | Command | What It Does |
-> |---------|-------------|
-> | `/create-recipe` | Create a new recipe (guided) |
-> | `/test-recipe` | Test recipe on sample leads |
-> | `/review-performance` | View batch stats and output history |
->
-> You also have access to all Clay Operator and Campaign Operator commands.
+> If you need data changed, ask the Clay Operator or Copy Strategist.
 
 Set the role context for the rest of this session.

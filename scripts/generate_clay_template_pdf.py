@@ -61,7 +61,7 @@ def build():
 
     # ── Title ──
     story.append(Paragraph("Clay Template Specification", title_style))
-    story.append(Paragraph("GTM-CC Standardized Clay Table Layout — v1.0", subtitle_style))
+    story.append(Paragraph("GTM-CC Standardized Clay Table Layout — v2.0", subtitle_style))
     story.append(HRFlowable(width="100%", thickness=1, color=BLUE))
     story.append(Spacer(1, 12))
 
@@ -69,7 +69,7 @@ def build():
     story.append(Paragraph("How It Works", h1))
     story.append(Paragraph("Every Clay table follows this structure regardless of client or scenario:", body))
     for step in [
-        "<b>1.</b> We push leads from Neon → Clay via webhook (Section A: 41 fields per lead)",
+        "<b>1.</b> We push leads from Neon → Clay via webhook (Section A: 38 fields per lead)",
         "<b>2.</b> Clay processes them: verification → enrichment → email generation (Sections B–G)",
         "<b>3.</b> Clay pushes results back to Neon via 3 HTTP columns (Sections C, F, H)",
     ]:
@@ -79,15 +79,15 @@ def build():
     # ── Variant Flexibility ──
     story.append(Paragraph("Variant Flexibility", h2))
     story.append(Paragraph(
-        "The DB always has 9 email columns (email_1/2/3_variant_a/b/c) + 2 subject lines. "
-        "Not every recipe uses all variants. The recipe's <b>clay_instructions</b> tells the Clay operator "
+        "The DB has 6 email columns (email_1/2/3_variant_a/b). "
+        "Not every recipe uses both variants. The recipe's <b>clay_instructions</b> tells the Clay operator "
         "which AI columns to create. Unused variants stay NULL in the DB.", body))
     story.append(Paragraph(
-        "<b>Recipe v1</b> (1 variant/email): Clay table has 3 AI columns → email_X_variant_a populated, b/c = NULL", bullet))
+        "<b>Recipe v1</b> (1 variant/email): Clay table has 3 AI columns → email_X_variant_a populated, b = NULL", bullet))
     story.append(Paragraph(
-        "<b>Recipe v2</b> (3 variants/email): Clay table has 9 AI columns → all email_X_variant_a/b/c populated", bullet))
+        "<b>Recipe v2</b> (2 variants/email): Clay table has 6 AI columns → all email_X_variant_a/b populated", bullet))
     story.append(Paragraph(
-        "HTTP Column 3 always references all 9 columns. Non-existent Clay columns resolve to empty → stored as NULL.", bullet))
+        "HTTP Column 3 always references all variant columns. Non-existent Clay columns resolve to empty → stored as NULL.", bullet))
 
     story.append(PageBreak())
 
@@ -122,68 +122,78 @@ def build():
     ]
     story.append(_make_table(company_data))
 
-    # Client + Segment
-    story.append(Paragraph("Client + Segment (5)", h3))
-    cs_data = [
+    # Enrichment
+    story.append(Paragraph("Enrichment Fields (4)", h3))
+    enr_data = [
         ['#', 'Field', 'Source', 'Notes'],
-        ['13', 'client_id', 'clients.client_id', 'UUID — needed for email_outputs INSERT'],
-        ['14', 'client_name', 'clients.client_name', 'Human reference in Clay'],
-        ['15', 'segment_id', 'segments.segment_id', 'INT — needed for email_outputs INSERT'],
-        ['16', 'segment_name', 'segments.segment_name', 'Human reference'],
-        ['17', 'segment_tag', 'segments.segment_tag', 'Human reference'],
+        ['13', 'monthly_visits', 'leads.monthly_visits', ''],
+        ['14', 'lcp', 'leads.lcp', 'Largest Contentful Paint'],
+        ['15', 'tti', 'leads.tti', 'Time to Interactive'],
+        ['16', 'aov', 'leads.aov', 'Average Order Value'],
     ]
-    story.append(_make_table(cs_data))
+    story.append(_make_table(enr_data))
 
     # Verification
     story.append(Paragraph("Verification Fields (5)", h3))
     ver_data = [
         ['#', 'Field', 'Source', 'Notes'],
-        ['18', 'email_verified', 'leads.email_verified', 'Current status'],
-        ['19', 'email_verified_at', 'leads.email_verified_at', 'When last verified'],
-        ['20', 'is_catchall', 'leads.is_catchall', ''],
-        ['21', 'mx_provider', 'leads.mx_provider', ''],
-        ['22', 'has_email_security_gateway', 'leads.has_email_...', ''],
+        ['17', 'email_verified', 'leads.email_verified', 'Current status'],
+        ['18', 'email_verified_at', 'leads.email_verified_at', 'When last verified'],
+        ['19', 'is_catchall', 'leads.is_catchall', ''],
+        ['20', 'mx_provider', 'leads.mx_provider', ''],
+        ['21', 'has_email_security_gateway', 'leads.has_email_...', ''],
     ]
     story.append(_make_table(ver_data))
 
-    # Enrichment
-    story.append(Paragraph("Enrichment Fields (4)", h3))
-    enr_data = [
+    # Client
+    story.append(Paragraph("Client Fields (2)", h3))
+    cl_data = [
         ['#', 'Field', 'Source', 'Notes'],
-        ['23', 'monthly_visits', 'leads.monthly_visits', ''],
-        ['24', 'lcp', 'leads.lcp', 'Largest Contentful Paint'],
-        ['25', 'tti', 'leads.tti', 'Time to Interactive'],
-        ['26', 'aov', 'leads.aov', 'Average Order Value'],
+        ['22', 'client_id', 'clients.client_id', 'UUID — needed for email_outputs INSERT'],
+        ['23', 'client_name', 'clients.client_name', 'Human reference in Clay'],
     ]
-    story.append(_make_table(enr_data))
+    story.append(_make_table(cl_data))
+
+    # Segment
+    story.append(Paragraph("Segment Fields (5)", h3))
+    seg_data = [
+        ['#', 'Field', 'Source', 'Notes'],
+        ['24', 'segment_id', 'segments.segment_id', 'INT — needed for email_outputs INSERT'],
+        ['25', 'segment_name', 'segments.segment_name', 'Human reference'],
+        ['26', 'segment_tag', 'segments.segment_tag', 'Human reference'],
+        ['27', 'lead_list_context', 'segments.leadlist_context', 'Context for email generation'],
+        ['28', 'value_prop', 'segments.value_prop', 'Value prop for this segment'],
+    ]
+    story.append(_make_table(seg_data))
 
     # Recipe
-    story.append(Paragraph("Recipe Context (3)", h3))
+    story.append(Paragraph("Batch + Recipe (3)", h3))
     rec_data = [
         ['#', 'Field', 'Source', 'Notes'],
-        ['27', 'recipe_id', 'recipes.recipe_id', 'Active recipe for this segment'],
-        ['28', 'current_recipe_version', 'recipes.version', 'Current version number'],
-        ['29', 'batch_id', 'Generated', '{client}_{segment}_{YYYYMMDD}_{seq}'],
+        ['29', 'recipe_id', 'recipes.recipe_id', 'Active recipe for this segment'],
+        ['30', 'current_recipe_version', 'recipes.version', 'Current version number'],
+        ['31', 'batch_id', 'Generated', '{segment_tag}_{YYYYMMDD}_{seq}'],
     ]
     story.append(_make_table(rec_data))
 
     # Existing outputs
-    story.append(Paragraph("Existing Email Outputs (12)", h3))
+    story.append(Paragraph("Existing Email Outputs (7)", h3))
     story.append(Paragraph(
         "Only populated if the lead already has outputs in the DB. Lets Clay skip regeneration when recipe version is unchanged.", body))
     out_data = [
         ['#', 'Field', 'Source'],
-        ['30', 'last_recipe_version', 'email_outputs.recipe_version'],
-        ['31', 'existing_subject_line_1', 'email_outputs.subject_line_1'],
-        ['32', 'existing_subject_line_2', 'email_outputs.subject_line_2'],
-        ['33–35', 'existing_email_1_variant_a/b/c', 'email_outputs.email_1_variant_*'],
-        ['36–38', 'existing_email_2_variant_a/b/c', 'email_outputs.email_2_variant_*'],
-        ['39–41', 'existing_email_3_variant_a/b/c', 'email_outputs.email_3_variant_*'],
+        ['32', 'last_recipe_version', 'email_outputs.recipe_version'],
+        ['33', 'existing_email_1_variant_a', 'email_outputs.email_1_variant_a'],
+        ['34', 'existing_email_1_variant_b', 'email_outputs.email_1_variant_b'],
+        ['35', 'existing_email_2_variant_a', 'email_outputs.email_2_variant_a'],
+        ['36', 'existing_email_2_variant_b', 'email_outputs.email_2_variant_b'],
+        ['37', 'existing_email_3_variant_a', 'email_outputs.email_3_variant_a'],
+        ['38', 'existing_email_3_variant_b', 'email_outputs.email_3_variant_b'],
     ]
     story.append(_make_table(out_data, col_widths=[50, 200, 220]))
 
     story.append(Spacer(1, 8))
-    story.append(Paragraph("<b>Total import fields: 41</b>", body))
+    story.append(Paragraph("<b>Total import fields: 38</b>", body))
 
     story.append(PageBreak())
 
@@ -243,8 +253,7 @@ def build():
     dec_data = [
         ['Column', 'Logic'],
         ['Needs Enrichment', 'IF(AND(LCP = "", TTI = ""), "yes", "no")'],
-        ['Needs Email Generation', 'IF(OR(Current Recipe Version != Last Recipe Version,\nExisting Subject Line_1 = ""), "generate", "skip")'],
-        ['Action', 'Combines above: generate / enrich_only / verify_only / skip'],
+        ['Needs Email Generation', 'IF(OR(Current Recipe Version != Last Recipe Version,\nExisting Email 1 Variant A = ""), "generate", "skip")'],
     ]
     story.append(_make_table(dec_data, col_widths=[160, 310]))
     story.append(Spacer(1, 6))
@@ -256,7 +265,7 @@ def build():
     story.append(Spacer(1, 10))
     story.append(Paragraph("Section E: Data Enrichment (Clay Enrichment Columns)", h1))
     story.append(Paragraph("Only runs for leads where Needs Enrichment = \"yes\". Specific columns depend on recipe's "
-                           "data_variables_required and enrichment_sources.", body))
+                           "data_variables_required.", body))
 
     enr_cols = [
         ['Column', 'Source', 'Gets'],
@@ -273,21 +282,26 @@ def build():
     # ── Section F: HTTP Column 2 ──
     story.append(Spacer(1, 10))
     story.append(Paragraph("Section F: HTTP Column 2 — Enrichment Push-Back", h1))
-    story.append(Paragraph("<b>Target:</b> UPDATE leads table", body))
+    story.append(Paragraph("<b>Target:</b> UPDATE leads table (dedicated columns + extra_data JSONB)", body))
+    story.append(Paragraph(
+        "Use <font face='Courier'>/generate-http-query</font> to build the exact query body. "
+        "Dedicated columns (lcp, tti, aov, monthly_visits) get SET clauses. "
+        "Everything else goes into extra_data as JSONB keys via jsonb_strip_nulls(jsonb_build_object(...)).", body))
 
     sql2 = (
         'UPDATE leads SET<br/>'
-        '  lcp = COALESCE(NULLIF($1, \'\')::double precision, lcp),<br/>'
-        '  tti = COALESCE(NULLIF($2, \'\')::double precision, tti),<br/>'
-        '  aov = COALESCE(NULLIF($3, \'\')::double precision, aov),<br/>'
-        '  monthly_visits = COALESCE(NULLIF($4, \'\')::int, monthly_visits),<br/>'
-        '  employee_count = COALESCE(NULLIF($5, \'\'), employee_count),<br/>'
-        '  industry = COALESCE(NULLIF($6, \'\'), industry)<br/>'
-        'WHERE lead_id = $7'
+        '  lcp = CASE WHEN $1 != \'\' THEN $1::float ELSE lcp END,<br/>'
+        '  extra_data = COALESCE(extra_data, \'{}\'::jsonb) ||<br/>'
+        '    jsonb_strip_nulls(jsonb_build_object(<br/>'
+        '      \'cdn_detected\', NULLIF($2, \'\'),<br/>'
+        '      \'crux_lcp_p75\', NULLIF($3, \'\')<br/>'
+        '    ))<br/>'
+        'WHERE lead_id = $4'
     )
     story.append(Paragraph(sql2, code_style))
-    story.append(Paragraph("Params: {{LCP Result}}, {{TTI Result}}, {{AOV Result}}, "
-                           "{{Monthly Visits}}, {{Employee Count}}, {{Industry Result}}, {{Lead Id}}", body))
+    story.append(Paragraph(
+        "<b>Pattern:</b> Dedicated columns use CASE WHEN. Extra data uses JSONB merge with NULLIF to skip empty values. "
+        "Use /generate-http-query to build the exact query for your data points.", note_style))
 
     story.append(PageBreak())
 
@@ -300,21 +314,21 @@ def build():
     email_cols = [
         ['#', 'Column', 'Notes'],
         ['1', 'Company Summary', '50–100 word summary from website scrape'],
-        ['2', 'Selected Approach', 'Which approach from the recipe'],
-        ['3', 'Subject Line 1', 'First subject line'],
-        ['4', 'Subject Line 2', 'Second subject line'],
-        ['5', 'Email 1 Variant A', 'Always created'],
-        ['6', 'Email 1 Variant B', 'Only if recipe specifies multiple variants'],
-        ['7', 'Email 1 Variant C', 'Only if recipe specifies 3 variants'],
-        ['8–10', 'Email 2 Variant A/B/C', 'Follow-up email (same variant logic)'],
-        ['11–13', 'Email 3 Variant A/B/C', 'Break-up email (same variant logic)'],
+        ['2', 'Selected Approach', 'Which approach was selected (formula column)'],
+        ['3', 'Research Report', 'Conditional — only if approach requires research'],
+        ['4', 'Email 1 Variant A', 'Always created'],
+        ['5', 'Email 1 Variant B', 'Only if recipe specifies 2 variants'],
+        ['6', 'Email 2 Variant A', 'Follow-up email'],
+        ['7', 'Email 2 Variant B', 'Only if recipe specifies 2 variants'],
+        ['8', 'Email 3 Variant A', 'Break-up email'],
+        ['9', 'Email 3 Variant B', 'Only if recipe specifies 2 variants'],
     ]
     story.append(_make_table(email_cols))
     story.append(Spacer(1, 6))
     story.append(Paragraph(
         "<b>Recipe controls variant count:</b> The recipe's clay_instructions specify how many variant columns "
-        "to create. Variant A is always present. Variants B and C are optional. HTTP Column 3 always "
-        "references all 9 email columns — non-existent Clay columns resolve to NULL in the DB.", note_style))
+        "to create. Variant A is always present. Variant B is optional. HTTP Column 3 always "
+        "references all 6 email columns — non-existent Clay columns resolve to NULL in the DB.", note_style))
 
     # ── Section H: HTTP Column 3 ──
     story.append(Spacer(1, 10))
@@ -326,18 +340,16 @@ def build():
     sql3 = (
         'INSERT INTO email_outputs (<br/>'
         '  lead_id, client_id, segment_id, recipe_id, recipe_version,<br/>'
-        '  selected_approach, company_summary,<br/>'
-        '  subject_line_1, subject_line_2,<br/>'
-        '  email_1_variant_a, email_1_variant_b, email_1_variant_c,<br/>'
-        '  email_2_variant_a, email_2_variant_b, email_2_variant_c,<br/>'
-        '  email_3_variant_a, email_3_variant_b, email_3_variant_c,<br/>'
-        '  batch_id<br/>'
-        ') VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)'
+        '  selected_approach,<br/>'
+        '  email_1_variant_a, email_1_variant_b,<br/>'
+        '  email_2_variant_a, email_2_variant_b,<br/>'
+        '  email_3_variant_a, email_3_variant_b<br/>'
+        ') VALUES ($1,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
     )
     story.append(Paragraph(sql3, code_style))
     story.append(Paragraph(
         "<b>Critical:</b> client_id and segment_id must be pushed as import data (Section A) "
-        "so they're available as Clay variables here.", note_style))
+        "so they're available as Clay variables here. Use /generate-http-query for the exact body.", note_style))
 
     story.append(PageBreak())
 
@@ -346,7 +358,7 @@ def build():
 
     scenarios = [
         ("Scenario 1: Full Pipeline", "New leads, new recipe",
-         "Push all 41 fields. Existing emails empty. Clay runs B→C→D→E→F→G→H. "
+         "Push all 38 fields. Existing emails empty. Clay runs B→C→D→E→F→G→H. "
          "Everything verified, enriched, generated, pushed back."),
         ("Scenario 2: Re-verification Only", "Email validity check",
          "Push Section A fields. Clay runs B→C only. HTTP Col 2 & 3 disabled. "
@@ -372,18 +384,15 @@ def build():
     story.append(Paragraph("How Variant Counts Change Across Recipe Versions", h1))
 
     vc_data = [
-        ['', 'Recipe v1\n(1 variant)', 'Recipe v2\n(3 variants)', 'Recipe v3\n(2 variants)'],
-        ['email_1_variant_a', 'Populated', 'Populated', 'Populated'],
-        ['email_1_variant_b', 'NULL', 'Populated', 'Populated'],
-        ['email_1_variant_c', 'NULL', 'Populated', 'NULL'],
-        ['email_2_variant_a', 'Populated', 'Populated', 'Populated'],
-        ['email_2_variant_b', 'NULL', 'Populated', 'Populated'],
-        ['email_2_variant_c', 'NULL', 'Populated', 'NULL'],
-        ['email_3_variant_a', 'Populated', 'Populated', 'Populated'],
-        ['email_3_variant_b', 'NULL', 'Populated', 'Populated'],
-        ['email_3_variant_c', 'NULL', 'Populated', 'NULL'],
+        ['', 'Recipe v1\n(1 variant)', 'Recipe v2\n(2 variants)'],
+        ['email_1_variant_a', 'Populated', 'Populated'],
+        ['email_1_variant_b', 'NULL', 'Populated'],
+        ['email_2_variant_a', 'Populated', 'Populated'],
+        ['email_2_variant_b', 'NULL', 'Populated'],
+        ['email_3_variant_a', 'Populated', 'Populated'],
+        ['email_3_variant_b', 'NULL', 'Populated'],
     ]
-    story.append(_make_table(vc_data, col_widths=[130, 110, 110, 110]))
+    story.append(_make_table(vc_data, col_widths=[150, 140, 140]))
     story.append(Spacer(1, 6))
     story.append(Paragraph(
         "Each recipe version creates a NEW row in email_outputs. Old rows are never modified. "
@@ -398,15 +407,15 @@ def build():
     steps = [
         "Create blank table (not from template — webhook auto-creates columns)",
         "Set up webhook → get URL → give to /push-to-clay command",
-        "Push 1 test lead → verify all 41 columns appear correctly",
+        "Push 1 test lead → verify all 38 columns appear correctly",
         "Add verification waterfall (Section B) — use the standard template",
         "Add HTTP Column 1 (Section C) — verification push-back",
         "Add decision logic (Section D) — needs_enrichment / needs_generation formulas",
-        "Add enrichment columns (Section E) — per recipe's enrichment_sources",
-        "Add HTTP Column 2 (Section F) — enrichment push-back",
+        "Add enrichment columns (Section E) — per recipe's data_variables_required",
+        "Add HTTP Column 2 (Section F) — use /generate-http-query for the body",
         "Add email generation columns (Section G) — per recipe's clay_instructions",
-        "Add HTTP Column 3 (Section H) — email output push-back",
-        "Test with 3 leads → verify all 3 HTTP columns fire correctly",
+        "Add HTTP Column 3 (Section H) — use /generate-http-query for the body",
+        "Test with 5 leads → verify all 3 HTTP columns fire correctly",
         "Push remaining leads → run table",
     ]
     for i, step in enumerate(steps, 1):
@@ -419,19 +428,19 @@ def build():
         'Method: POST<br/>'
         'Headers:<br/>'
         '  Content-Type: application/json<br/>'
-        '  Neon-Connection-String: {connection-string-from-Mayank}<br/>'
-        'Body: (see SQL queries in Sections C, F, H)'
+        '  Neon-Connection-String: {connection-string-from-Copy-Strategist}<br/>'
+        'Body: Use /generate-http-query to build the exact body'
     )
     story.append(Paragraph(http_config, code_style))
     story.append(Paragraph(
-        "Get the Neon host and connection string from Mayank. Never share in Slack or email.", note_style))
+        "Get the Neon host and connection string from the Copy Strategist. Never share in Slack or email.", note_style))
 
     # ── Batch ID Format ──
     story.append(Spacer(1, 12))
     story.append(Paragraph("Batch ID Format", h2))
-    story.append(Paragraph("<font face='Courier'>{client_tag}_{segment_tag}_{YYYYMMDD}_{seq}</font>", body))
-    story.append(Paragraph("Examples: speedsize_1m-plus_20260403_001, hector_retail_20260403_001", body))
-    story.append(Paragraph("Seq increments if multiple batches run on the same day for the same client/segment.", body))
+    story.append(Paragraph("<font face='Courier'>{segment_tag}_{YYYYMMDD}_{seq}</font>", body))
+    story.append(Paragraph("Examples: 1m-plus_20260403_001, retail_20260403_001", body))
+    story.append(Paragraph("Seq increments if multiple batches run on the same day for the same segment.", body))
 
     # Build
     doc.build(story)

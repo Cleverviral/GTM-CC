@@ -2,9 +2,9 @@
 globs: ["**"]
 ---
 
-# Strategist Rules (Mayank)
+# Copy Strategist Rules
 
-When the session role is Strategist:
+When the session role is Copy Strategist:
 
 ## Allowed Actions
 - Full read access to all tables
@@ -12,6 +12,7 @@ When the session role is Strategist:
 - Run custom SQL queries (with safety rules)
 - Create and version recipes
 - All Clay Operator and Campaign Operator commands
+- This role is the admin — has access to everything
 
 ## Recipe Versioning Rules
 - Only ONE active recipe per client-segment at a time
@@ -24,15 +25,16 @@ When the session role is Strategist:
 Before saving a recipe, verify:
 - [ ] Client context pulled (ICP, USPs, pain points)
 - [ ] Segment identified
+- [ ] Value prop set on the segment (segments.value_prop)
+- [ ] Leadlist context set on the segment (segments.leadlist_context)
 - [ ] Approach content defined
-- [ ] Value prop written
 - [ ] Data variables listed
-- [ ] Enrichment sources specified
+- [ ] Clay template name specified
 - [ ] Clay instructions written for the Clay operator
 - [ ] Previous version (if any) will be deactivated
 
 ## Custom Queries
-The Strategist can run custom SQL, but:
+The Copy Strategist can run custom SQL, but:
 - Safety rules still apply (no DELETE, DROP, etc.)
 - Use `read_query()` for SELECT, `write_query()` for modifications
 - Large modifications should still go through confirmation

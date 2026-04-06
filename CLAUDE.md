@@ -5,18 +5,18 @@
 At the **start of every conversation**, ask:
 
 > "Who am I working with today?
-> 1. **Kuldeep** — Clay Operator
-> 2. **Hasan** — Campaign Operator
-> 3. **Mayank** — Strategist
+> 1. **Copy Strategist** — creates recipes, manages clients/segments, full DB access
+> 2. **Clay Operator** — pulls leads, pushes to Clay, manages enrichment
+> 3. **Campaign Operator** — exports CSVs, views email outputs (read-only)
 >
-> Type your name or role number."
+> Type your role number."
 
 Once identified, enforce that role's permissions for the entire session. Refer to the permissions matrix below. If someone tries to do something outside their role, politely redirect them.
 
 After identifying the role, show their available commands:
-- Clay Operator: `/pull-leads`, `/push-to-clay`, `/check-batch`, `/export-csv`
-- Campaign Operator: `/get-batch`, `/check-outputs`, `/reuse-emails`
-- Strategist: `/create-recipe`, `/test-recipe`, `/review-performance` + all Clay/Campaign commands
+- Copy Strategist: `/create-recipe`, `/test-recipe`, `/pull-leads`, `/push-to-clay`, `/export-csv`, `/check-outputs`, `/generate-http-query` + free-form SQL
+- Clay Operator: `/pull-leads`, `/push-to-clay`, `/export-csv`, `/generate-http-query`
+- Campaign Operator: `/export-csv`, `/check-outputs`
 
 ---
 
@@ -25,12 +25,12 @@ After identifying the role, show their available commands:
 GTM-CC is a cold email campaign system with:
 - **1 Neon PostgreSQL database** (connection string in `.env` as `NEON_CONNECTION_STRING` or `NEON_TEST_CONNECTION_STRING`)
 - **5 tables**: clients, segments, leads, recipes, email_outputs
-- **3 roles**: Strategist, Clay Operator, Campaign Operator
-- **Clay integration**: Webhook push (Neon → Clay) + 3 HTTP columns push-back (Clay → Neon)
+- **3 roles**: Copy Strategist (admin), Clay Operator, Campaign Operator
+- **Clay integration**: Webhook push (Neon → Clay) + HTTP columns push-back (Clay → Neon)
 
 ---
 
-## Database Schema (v3.1)
+## Database Schema (v4.0)
 
 ### clients
 | Column | Type | Notes |
@@ -39,7 +39,7 @@ GTM-CC is a cold email campaign system with:
 | client_name | text | |
 | client_website | text | |
 | client_status | text | in_onboarding / active / paused / churned |
-| target_icp_details | text | ICP lives on CLIENT, not segment |
+| target_icp_details | text | ICP lives on CLIENT |
 | target_persona | text | |
 | pain_points | text | |
 | client_usp_differentiators | text | |
@@ -52,7 +52,10 @@ GTM-CC is a cold email campaign system with:
 | client_id | UUID FK → clients | |
 | segment_name | text | e.g., "1M+ Qualified" |
 | segment_tag | text | Human-readable label |
+| description | text | |
 | status | text | active / paused / archived |
+| leadlist_context | text | Targeting criteria for this segment |
+| value_prop | text | Value proposition for this segment |
 
 ### leads
 | Column | Type | Notes |
@@ -70,12 +73,13 @@ GTM-CC is a cold email campaign system with:
 | email_verified_at | timestamptz | |
 | is_catchall | text | |
 | mx_provider | text | |
+| has_email_security_gateway | text | |
 | lcp | float | Largest Contentful Paint |
 | tti | float | Time to Interactive |
 | aov | float | Average Order Value |
 | segment_ids | int[] | Array of segment IDs |
 | info_tags | text[] | Free-form context tags |
-| extra_data | jsonb | Flexible catch-all |
+| extra_data | jsonb | Flexible catch-all for Clay enrichment data |
 
 ### recipes
 | Column | Type | Notes |
@@ -85,9 +89,11 @@ GTM-CC is a cold email campaign system with:
 | segment_id | int FK | |
 | version | int | Bumps on ANY change |
 | status | text | active / inactive / testing |
-| approach_content | text | Full playbook |
-| value_prop | text | |
+| approach_content | text | Full playbook (reference, NOT pushed to Clay) |
+| data_variables_required | text[] | What data the recipe needs |
+| clay_template_name | text | Saved Clay template to use |
 | clay_instructions | text | Step-by-step for Clay operator |
+| notes | text | What changed in this version |
 
 ### email_outputs
 | Column | Type | Notes |
@@ -99,10 +105,12 @@ GTM-CC is a cold email campaign system with:
 | recipe_id | int FK | |
 | recipe_version | int | |
 | selected_approach | text | Which approach ran |
-| subject_line_1, subject_line_2 | text | |
-| email_1_variant_a/b/c | text | 3 variants per email |
-| email_2_variant_a/b/c | text | |
-| email_3_variant_a/b/c | text | |
+| email_1_variant_a | text | Primary email 1 |
+| email_1_variant_b | text | A/B variant |
+| email_2_variant_a | text | Primary email 2 |
+| email_2_variant_b | text | A/B variant |
+| email_3_variant_a | text | Primary email 3 |
+| email_3_variant_b | text | A/B variant |
 | company_summary | text | |
 | batch_id | text | Groups a Clay run |
 
@@ -110,16 +118,17 @@ GTM-CC is a cold email campaign system with:
 
 ## Permissions Matrix
 
-| Action | Strategist | Clay Operator | Campaign Operator |
-|--------|-----------|---------------|-------------------|
+| Action | Copy Strategist | Clay Operator | Campaign Operator |
+|--------|----------------|---------------|-------------------|
 | SELECT any table | Yes | Yes | Yes |
 | INSERT/UPDATE clients | Yes | No | No |
 | INSERT/UPDATE segments | Yes | No | No |
 | UPDATE leads (enrichment) | Yes | Yes (via commands) | No |
 | INSERT/UPDATE recipes | Yes | No | No |
-| INSERT email_outputs | Yes | Yes (via Clay) | No |
+| INSERT email_outputs | Yes | Yes (via Clay HTTP) | No |
 | Export CSV | Yes | Yes | Yes |
 | Push to Clay webhook | Yes | Yes | No |
+| Generate HTTP queries | Yes | Yes | No |
 | Free-form SQL queries | Yes | No | No |
 
 ---
@@ -162,27 +171,44 @@ When a user shares an API key or secret:
 
 ---
 
+## Clay Integration
+
+### Webhook Push (Neon → Clay): 38 Fields
+When pushing leads to Clay, ALL 38 fields must be included. See `/push-to-clay` command for the complete payload spec.
+
+### HTTP Push-back (Clay → Neon)
+- HTTP Col 1: Verification data → UPDATE leads (email_verified, is_catchall, mx_provider)
+- HTTP Col 2: Enrichment data → UPDATE leads (lcp + extra_data JSONB merge)
+- HTTP Col 3: Email outputs → INSERT email_outputs (9 params: lead_id, client_id, segment_id, recipe_id, recipe_version, selected_approach, email_1/2/3_variant_a)
+
+### Approach Selection
+Approaches live in saved Clay templates, NOT in the webhook payload. The recipe stores the `clay_template_name` so the operator knows which template to use.
+
+---
+
 ## Available Commands
 
-### Clay Operator (Kuldeep)
+### Copy Strategist (all commands + free-form SQL)
+| Command | What It Does |
+|---------|-------------|
+| `/create-recipe` | Create a new recipe (guided flow) |
+| `/test-recipe` | Test a recipe on sample leads (dry run) |
+| `/pull-leads` | Pull leads for a client+segment with guided filters |
+| `/push-to-clay` | Push leads to Clay table via webhook (38 fields) |
+| `/export-csv` | Export leads + emails as CSV |
+| `/check-outputs` | View email output stats for a client+segment |
+| `/generate-http-query` | Generate HTTP push-back query for Clay operator |
+
+### Clay Operator
 | Command | What It Does |
 |---------|-------------|
 | `/pull-leads` | Pull leads for a client+segment with guided filters |
-| `/push-to-clay` | Push pulled leads to a Clay table via webhook |
-| `/check-batch` | View recent batch history and status |
-| `/export-csv` | Export leads + emails as CSV for campaign operator |
+| `/push-to-clay` | Push leads to Clay table via webhook (38 fields) |
+| `/export-csv` | Export leads + emails as CSV |
+| `/generate-http-query` | Generate HTTP push-back query (enrichment or email outputs) |
 
-### Campaign Operator (Hasan)
+### Campaign Operator
 | Command | What It Does |
 |---------|-------------|
-| `/get-batch` | Get a ready batch with emails as CSV |
+| `/export-csv` | Export leads + emails as CSV with tracking fields |
 | `/check-outputs` | View email output stats for a client+segment |
-| `/reuse-emails` | Pull existing emails for bad-infra re-send |
-
-### Strategist (Mayank)
-All of the above, plus:
-| Command | What It Does |
-|---------|-------------|
-| `/create-recipe` | Create a new recipe (guided) |
-| `/test-recipe` | Test a recipe on sample leads |
-| `/review-performance` | View batch stats and output history |

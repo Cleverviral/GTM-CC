@@ -29,11 +29,12 @@ Run the query with filters. Show:
 - 5 sample rows: email, company_name, job_title, monthly_visits, email_verified
 
 ## Step 5: Check Recipe + Existing Outputs
-Query: `SELECT recipe_id, version, status FROM recipes WHERE segment_id = {id} AND status = 'active'`
+Query: `SELECT recipe_id, version, status, clay_template_name FROM recipes WHERE segment_id = {id} AND status = 'active'`
 Query: `SELECT COUNT(*) FROM email_outputs WHERE segment_id = {id}`
 
 Tell the operator:
 - "Active recipe: v{X}" or "No active recipe yet"
+- "Clay template: {clay_template_name}" or "No template set"
 - "{N} leads already have email outputs (will be PASS_THRU in Clay)"
 - "{M} leads need new outputs (will be REGENERATE in Clay)"
 

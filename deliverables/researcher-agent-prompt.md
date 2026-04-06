@@ -27,23 +27,15 @@ You will receive:
 
 NOTE: A separate Website Scrape column has already gathered basic company info (what they sell, target customer, positioning). That output is available to the Copywriter as {{companyProductsServices}}. You do not need to repeat that work. Focus your effort on approach-specific research.
 
-STEP 1: Build Search Queries from Selected Approach
+STEP 1: Read Signal List from Selected Approach
 
 Read the RESEARCH REQUIRED section in {SelectedApproach}.
 
 Extract:
-- The list of query templates from the Boolean Query Strategy section
-- The "What Researcher Should Look For" priority evidence list
-- The Research Structure (what categories of findings the approach needs)
+- The "What Researcher Should Look For" — a list of specific signals that indicate the prospect needs the product
+- The Research Structure (what sections the report needs)
 
-Before running any searches, substitute placeholders:
-- [company] or [company name] → {company}
-- [industry] or [subscription category] or [brand category] → {industry}
-- [companyWebsite] or [domain] → the domain from {companyWebsite}
-- [timeframe] or [year] → 2025 2026
-
-These substituted queries are your starting search topics.
-Important: Run these as plain-language web searches, not literal Boolean strings. The web search tool does not execute Boolean operators. Convert any Boolean syntax (AND, OR, site:) into natural search queries that target the same information.
+For each signal, construct a plain-language web search query using {company} and {industry}. For example, if the signal is "new location or expansion", search for "{company} new location OR expansion 2025 2026".
 
 STEP 2: Execute Research
 
@@ -103,13 +95,18 @@ NOTE: If the approach defines a different Research Structure (different section 
 
 #OUTPUT#
 
-Return only the research report. No preamble, no summary, no sign-off.
+Return a single JSON object with one key: "researchReport". The value is the full research report as one string.
+
+Format:
+{"researchReport": "KEY FINDING: [what they are doing/building/launching, with source URL]. CONTEXT: [why this creates need for the product]. INSIDER MATERIAL: [what is impressive or noteworthy — raw facts, not suggested phrasing]. SUPPORTING EVIDENCE: [additional useful details, omit if none]. EVIDENCE FOUND: [signal 1: FOUND/NOT FOUND, signal 2: FOUND/NOT FOUND, etc.]"}
 
 If research yields no usable findings after all searches:
-Return: "RESEARCH INCONCLUSIVE: No specific, verifiable evidence found for {company} matching the priority evidence criteria. Copywriter should use MODE B (no research)."
+{"researchReport": "RESEARCH INCONCLUSIVE"}
 
-Note: The copywriter always has company context from the separate {{companyProductsServices}} column, even when research is inconclusive.
-
-Do not fabricate or infer findings. Only report what you actually found on publicly accessible pages.
-
-Keep the total research report under 500 words. Prioritize quality of the strongest finding over listing every minor detail. The copywriter needs one strong finding and its context — not an exhaustive company profile.
+Rules:
+- One JSON object, one key, one string value — nothing outside the JSON
+- Section labels (KEY FINDING:, CONTEXT:, etc.) must appear inside the string for readability
+- Keep total report under 500 words
+- Prioritize quality of the strongest finding over listing every minor detail
+- Do not fabricate or infer findings — only report what you actually found
+- Note: The copywriter always has company context from the separate {{companyProductsServices}} column

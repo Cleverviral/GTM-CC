@@ -216,15 +216,16 @@ def get_leads_for_segment(segment_id, limit=500, filters=None):
 def get_leads_with_outputs(segment_id, recipe_id=None, limit=500):
     """Pull leads with their latest email outputs for a segment."""
     sql = """
-        SELECT l.lead_id, l.email, l.first_name, l.last_name, l.company_name,
-               l.company_domain, l.job_title, l.industry, l.monthly_visits,
-               l.email_verified, l.lcp, l.tti, l.aov, l.extra_data,
+        SELECT l.lead_id, l.email, l.first_name, l.last_name, l.full_name,
+               l.company_name, l.company_domain, l.company_website, l.job_title,
+               l.linkedin_profile_url, l.industry, l.monthly_visits, l.employee_count,
+               l.email_verified, l.email_verified_at, l.is_catchall, l.mx_provider,
+               l.has_email_security_gateway, l.lcp, l.tti, l.aov, l.extra_data,
                eo.output_id, eo.recipe_id, eo.recipe_version, eo.selected_approach,
-               eo.subject_line_1, eo.subject_line_2,
-               eo.email_1_variant_a, eo.email_1_variant_b, eo.email_1_variant_c,
-               eo.email_2_variant_a, eo.email_2_variant_b, eo.email_2_variant_c,
-               eo.email_3_variant_a, eo.email_3_variant_b, eo.email_3_variant_c,
-               eo.company_summary, eo.batch_id
+               eo.email_1_variant_a, eo.email_1_variant_b,
+               eo.email_2_variant_a, eo.email_2_variant_b,
+               eo.email_3_variant_a, eo.email_3_variant_b,
+               eo.company_summary
         FROM leads l
         LEFT JOIN LATERAL (
             SELECT * FROM email_outputs eo2
@@ -303,12 +304,12 @@ def export_to_csv(rows, filepath, columns=None):
 
 def build_clay_payload(lead, client, segment, recipe, batch_id):
     """
-    Build the standardized 41-field JSON payload for a single lead push to Clay.
+    Build the standardized 38-field JSON payload for a single lead push to Clay.
 
     Args:
         lead: dict from get_leads_with_outputs() — includes lead fields + existing outputs
         client: dict with client_id, client_name
-        segment: dict with segment_id, segment_name, segment_tag
+        segment: dict with segment_id, segment_name, segment_tag, leadlist_context, value_prop
         recipe: dict from get_active_recipe() — or None if no recipe
         batch_id: str — format: {client_tag}_{segment_tag}_{YYYYMMDD}_{seq}
 
@@ -331,12 +332,11 @@ def build_clay_payload(lead, client, segment, recipe, batch_id):
         "industry": lead.get("industry"),
         "employee_count": lead.get("employee_count"),
 
-        # Client + Segment (5)
-        "client_id": str(client.get("client_id", "")),
-        "client_name": client.get("client_name"),
-        "segment_id": segment.get("segment_id"),
-        "segment_name": segment.get("segment_name"),
-        "segment_tag": segment.get("segment_tag"),
+        # Enrichment (4)
+        "monthly_visits": lead.get("monthly_visits"),
+        "lcp": lead.get("lcp"),
+        "tti": lead.get("tti"),
+        "aov": lead.get("aov"),
 
         # Verification (5)
         "email_verified": lead.get("email_verified"),
@@ -345,30 +345,30 @@ def build_clay_payload(lead, client, segment, recipe, batch_id):
         "mx_provider": lead.get("mx_provider"),
         "has_email_security_gateway": lead.get("has_email_security_gateway", ""),
 
-        # Enrichment (4)
-        "monthly_visits": lead.get("monthly_visits"),
-        "lcp": lead.get("lcp"),
-        "tti": lead.get("tti"),
-        "aov": lead.get("aov"),
+        # Client (2)
+        "client_id": str(client.get("client_id", "")),
+        "client_name": client.get("client_name"),
 
-        # Recipe (3)
+        # Segment (5) — value_prop lives on segment level
+        "segment_id": segment.get("segment_id"),
+        "segment_name": segment.get("segment_name"),
+        "segment_tag": segment.get("segment_tag"),
+        "lead_list_context": segment.get("leadlist_context"),
+        "value_prop": segment.get("value_prop"),
+
+        # Batch + Recipe (3)
         "recipe_id": recipe["recipe_id"] if recipe else None,
         "current_recipe_version": recipe["version"] if recipe else None,
         "batch_id": batch_id,
 
-        # Existing outputs (12) — from LEFT JOIN in get_leads_with_outputs
+        # Existing outputs (7) — from LEFT JOIN in get_leads_with_outputs
         "last_recipe_version": lead.get("recipe_version"),
-        "existing_subject_line_1": lead.get("subject_line_1"),
-        "existing_subject_line_2": lead.get("subject_line_2"),
         "existing_email_1_variant_a": lead.get("email_1_variant_a"),
         "existing_email_1_variant_b": lead.get("email_1_variant_b"),
-        "existing_email_1_variant_c": lead.get("email_1_variant_c"),
         "existing_email_2_variant_a": lead.get("email_2_variant_a"),
         "existing_email_2_variant_b": lead.get("email_2_variant_b"),
-        "existing_email_2_variant_c": lead.get("email_2_variant_c"),
         "existing_email_3_variant_a": lead.get("email_3_variant_a"),
         "existing_email_3_variant_b": lead.get("email_3_variant_b"),
-        "existing_email_3_variant_c": lead.get("email_3_variant_c"),
     }
 
 

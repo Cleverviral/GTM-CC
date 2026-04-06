@@ -1,27 +1,33 @@
-# Create a New Recipe (Strategist Only)
+# Create a New Recipe (Copy Strategist Only)
 
-**ROLE CHECK:** This command is only for the Strategist (Mayank). If the current role is Clay Operator or Campaign Operator, say: "This command is for the Strategist only. Please ask Mayank to create recipes."
+**ROLE CHECK:** This command is only for the Copy Strategist. If the current role is Clay Operator or Campaign Operator, say: "This command is for the Copy Strategist only."
 
 Guide the strategist through creating a new recipe for a client-segment.
 
 ## Step 1: Select Client
 
-Show clients with `get_clients()`. After selection, show full client context:
-```sql
-SELECT client_name, target_icp_details, target_persona, pain_points,
-       client_usp_differentiators, all_client_sales_resources,
-       all_social_proof_brand_names, client_call_to_action,
-       complimentary_sales_value, casestudy_or_leadmagnet_links
-FROM clients WHERE client_id = $1
+```python
+import sys; sys.path.insert(0, 'scripts')
+from db import read_query
+
+clients = read_query("SELECT client_id, client_name, target_icp_details, target_persona, pain_points, client_usp_differentiators FROM clients WHERE client_status = 'active' LIMIT 50")
 ```
 
-Display the client context so the strategist has it in view.
+Show numbered list. After selection, display the full client context.
 
 ## Step 2: Select Segment
 
-Show segments. Check if an active recipe already exists:
+```python
+segments = read_query("SELECT segment_id, segment_name, segment_tag, value_prop, leadlist_context FROM segments WHERE client_id = $1 LIMIT 50", [str(client_id)])
+```
+
+Show segments. Verify that `value_prop` and `leadlist_context` are populated on the chosen segment:
+- If `value_prop` is NULL: "Value prop is not set on this segment. Please provide one now or set it before creating the recipe."
+- If `leadlist_context` is NULL: "Leadlist context is not set on this segment. Please provide one now or set it before creating the recipe."
+
+Check if an active recipe already exists:
 ```sql
-SELECT recipe_id, version, status, created_at
+SELECT recipe_id, version, status, clay_template_name, created_at
 FROM recipes WHERE segment_id = $1 ORDER BY version DESC LIMIT 5
 ```
 
@@ -39,25 +45,23 @@ Guide through each section:
 > Include: angle, tone, CTA, what makes this different.
 > You can define multiple approaches (the selector will pick one per lead).
 
-### 3b: Value Proposition
-> **What's the value prop?** (shared across all approaches)
-
-### 3c: Lead List Context
-> **Describe the lead list.** (targeting criteria, why these leads, sales triggers)
-
-### 3d: Data Variables Required
+### 3b: Data Variables Required
 > **Which data variables does this recipe need?**
 > Available: monthly_visits, employee_count, lcp, tti, aov, industry, extra_data fields
 > List what the email generation needs.
 
-### 3e: Enrichment Sources
-> **What Clay enrichment is needed?**
-> Options: StoreLeads (AOV), PageSpeed (LCP/TTI), CrUX, SimilarWeb, Claygent scrape, etc.
+### 3c: Clay Template Name
+> **What is the saved Clay template name for this recipe?**
+> This is the template the Clay operator will use when setting up the Clay table.
+> (e.g., "speedsize-1m-plus-v1")
 
-### 3f: Clay Instructions
+### 3d: Clay Instructions
 > **Instructions for the Clay operator:**
 > Step-by-step for setting up the Clay table with this recipe.
 > Include: which columns to create, verification setup, formula logic, HTTP column config.
+
+### 3e: Notes
+> **What changed in this version?** (for version tracking)
 
 ## Step 4: Preview
 
@@ -67,11 +71,11 @@ Show the complete recipe in a clean format. Ask for confirmation.
 
 ```sql
 -- If there's an existing active recipe, deactivate it
-UPDATE recipes SET status = 'inactive' WHERE segment_id = $1 AND status = 'active';
+UPDATE recipes SET status = 'inactive', updated_at = NOW() WHERE segment_id = $1 AND status = 'active';
 
 -- Insert new recipe
-INSERT INTO recipes (client_id, segment_id, version, status, approach_content, value_prop, ...)
-VALUES ($1, $2, $3, 'active', $4, $5, ...);
+INSERT INTO recipes (client_id, segment_id, version, status, approach_content, data_variables_required, clay_template_name, clay_instructions, notes)
+VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8);
 ```
 
 Use `write_query()` with confirmation.
@@ -81,6 +85,6 @@ Use `write_query()` with confirmation.
 > - Segment: {segment_name}
 > - Version: {version}
 > - Status: active
-> - Recipe ID: {recipe_id}
+> - Clay Template: {clay_template_name}
 >
-> **Next step:** Test with `/test-recipe` or hand clay_instructions to the Clay operator.
+> **Next step:** Test with `/test-recipe` or share clay_instructions with the Clay operator.

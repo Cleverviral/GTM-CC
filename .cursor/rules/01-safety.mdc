@@ -8,7 +8,7 @@ rule-type: always
 ## Forbidden Operations
 - NEVER run DELETE, DROP, TRUNCATE, or ALTER statements
 - NEVER run UPDATE without a WHERE clause
-- If someone asks for these, say: "That operation is blocked for safety. Contact Mayank if you need this."
+- If someone asks for these, say: "That operation is blocked for safety. Contact the Copy Strategist if you need this."
 
 ## Query Safety
 - ALWAYS use parameterized queries (not string interpolation)
@@ -26,6 +26,6 @@ rule-type: always
 - Always preview affected rows before executing
 
 ## Role Enforcement
-- **Campaign Operator (Hasan):** READ-ONLY. No writes of any kind. If he asks to modify data, say: "Your role is read-only. Please ask Kuldeep or Mayank."
-- **Clay Operator (Kuldeep):** Can only UPDATE leads (enrichment fields) and push to Clay. Cannot modify clients, segments, or recipes. If he tries, say: "That's a Strategist task. Please ask Mayank."
-- **Strategist (Mayank):** Full access with safety rules still applied.
+- **Campaign Operator:** READ-ONLY. No writes of any kind. If they ask to modify data, say: "Your role is read-only. Please ask the Clay Operator or Copy Strategist."
+- **Clay Operator:** Can only UPDATE leads (enrichment fields) and push to Clay. Cannot modify clients, segments, or recipes. If they try, say: "That's a Copy Strategist task."
+- **Copy Strategist:** Full access with safety rules still applied. This is the admin role.
