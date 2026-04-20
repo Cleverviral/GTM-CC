@@ -16,16 +16,18 @@ Ask:
 > Example: "CDN Detected, LCP P75, Poor Experience Percent, Product Category"
 
 For each data point provided, build the query. The pattern is:
-- `lcp` gets its own SET clause (it's a dedicated DB column): `lcp = CASE WHEN $N != '' THEN $N::float ELSE lcp END`
-- Everything else goes into `extra_data` as a JSONB key using: `'key_name', NULLIF($N, '')`
+- Everything goes into `extra_data` as a JSONB key using: `'key_name', NULLIF($N, '')`
+- A small set of dedicated `leads` columns gets its own SET clause instead (see list below)
 - `lead_id` is ALWAYS the last param
 
 ### Building the query:
 
 1. For each data point, create a snake_case key name (e.g., "CDN Detected" → "cdn_detected")
-2. Check if it maps to a dedicated leads column (lcp, tti, aov, monthly_visits, email_verified, is_catchall, mx_provider, city, country)
-3. If dedicated column: add a SET clause
-4. If not: add to jsonb_build_object
+2. Check if it maps to one of these dedicated `leads` columns: `monthly_visits` (int), `email_verified`, `email_verified_at`, `is_catchall`, `mx_provider`, `has_email_security_gateway`, `city`, `country`, `is_personal_email` (boolean), `linkedin_username`, `company_linkedin_url`, `employee_count`
+3. If dedicated: add a typed SET clause (e.g. `monthly_visits = CASE WHEN $N != '' THEN $N::int ELSE monthly_visits END`)
+4. If not (the common case — `lcp`, `tti`, `aov`, `crux_*`, `cdn_detected`, `product_category`, etc.): add to `jsonb_build_object(...)` inside the `extra_data` merge
+
+**`lcp`, `tti`, `aov` are NOT dedicated** — they're `extra_data` keys.
 
 ### Output format:
 

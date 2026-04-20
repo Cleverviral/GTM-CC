@@ -220,7 +220,7 @@ def get_leads_with_outputs(segment_id, recipe_id=None, limit=500):
                l.company_name, l.company_domain, l.company_website, l.job_title,
                l.linkedin_profile_url, l.industry, l.monthly_visits, l.employee_count,
                l.email_verified, l.email_verified_at, l.is_catchall, l.mx_provider,
-               l.has_email_security_gateway, l.lcp, l.tti, l.aov, l.extra_data,
+               l.has_email_security_gateway, l.extra_data,
                eo.output_id, eo.recipe_id, eo.recipe_version, eo.selected_approach,
                eo.email_1_variant_a, eo.email_1_variant_b,
                eo.email_2_variant_a, eo.email_2_variant_b,
@@ -304,7 +304,10 @@ def export_to_csv(rows, filepath, columns=None):
 
 def build_clay_payload(lead, client, segment, recipe, batch_id):
     """
-    Build the standardized 38-field JSON payload for a single lead push to Clay.
+    Build the JSON payload for a single lead push to Clay.
+
+    Core fields (28) are always included. Enrichment data from extra_data
+    is flattened into the payload so each key becomes its own Clay column.
 
     Args:
         lead: dict from get_leads_with_outputs() — includes lead fields + existing outputs
@@ -315,7 +318,7 @@ def build_clay_payload(lead, client, segment, recipe, batch_id):
 
     Returns: dict ready to POST as JSON to Clay webhook
     """
-    return {
+    payload = {
         # Identity (7)
         "lead_id": lead.get("lead_id"),
         "email": lead.get("email"),
@@ -332,11 +335,8 @@ def build_clay_payload(lead, client, segment, recipe, batch_id):
         "industry": lead.get("industry"),
         "employee_count": lead.get("employee_count"),
 
-        # Enrichment (4)
+        # Enrichment (1 dedicated + extra_data flattened below)
         "monthly_visits": lead.get("monthly_visits"),
-        "lcp": lead.get("lcp"),
-        "tti": lead.get("tti"),
-        "aov": lead.get("aov"),
 
         # Verification (5)
         "email_verified": lead.get("email_verified"),
@@ -370,6 +370,20 @@ def build_clay_payload(lead, client, segment, recipe, batch_id):
         "existing_email_3_variant_a": lead.get("email_3_variant_a"),
         "existing_email_3_variant_b": lead.get("email_3_variant_b"),
     }
+
+    # Flatten extra_data into payload — each key becomes its own Clay column
+    extra = lead.get("extra_data")
+    if extra:
+        if isinstance(extra, str):
+            try:
+                extra = json.loads(extra)
+            except (json.JSONDecodeError, TypeError):
+                extra = {}
+        for key, val in extra.items():
+            if key not in payload:  # Don't overwrite core fields
+                payload[key] = val
+
+    return payload
 
 
 def generate_batch_id(client_name, segment_tag):
