@@ -127,6 +127,33 @@ placeholders are all normalized to NULL by the `clay_clean()` helper
 inside the function. No row will fail because of empty data — only because
 of bad data (e.g. non-int in segment_id, non-existent segment_id, etc.).
 
+## Auto-derived fields
+
+The function fills these in automatically if the operator doesn't provide
+them — Clay doesn't need a dedicated column for each:
+
+| Field | Auto-derived from | When |
+|---|---|---|
+| `full_name` | `first_name` + `last_name` | If `full_name` is null/empty |
+| `company_domain` | `company_website` (strip https://, www., path) | If `company_domain` is null/empty |
+| `linkedin_username` | `linkedin_profile_url` (part after `/in/`) | If `linkedin_username` is null/empty |
+| `is_personal_email` | Email domain vs known personal providers (gmail/yahoo/hotmail/outlook/etc.) | If `is_personal_email` not passed |
+
+These used to be automatic on Supabase — now reimplemented in
+`db/functions/clay_helpers.sql`. If the operator DOES provide a value,
+the provided value wins over auto-derivation.
+
+## recipe_id — can be left empty
+
+Slots 26 (`p_recipe_id`) and 27 (`p_recipe_version`) can both be `""` even
+when generating emails. The function auto-falls back to the **active
+recipe for the primary segment** (first segment_id in slot 2). Only pass
+an explicit recipe_id when you need a specific one (e.g. testing a
+non-active version).
+
+If no active recipe exists for the primary segment, the function returns
+a clear error: `No active recipe found for segment N`.
+
 ---
 
 ## What the function returns

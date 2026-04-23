@@ -15,8 +15,11 @@ with no per-table edit.
 
 | File | Purpose |
 |---|---|
-| `functions/clay_clean.sql` | Helper that normalizes Clay's `CLAYFORMATVALUE(...)` empty-format placeholders + whitespace + NULL into a single NULL. Used by `upsert_lead`. |
+| `functions/clay_clean.sql` | Helper: normalizes Clay's `CLAYFORMATVALUE(...)` empty-format placeholders + whitespace + NULL → a single NULL. |
+| `functions/clay_helpers.sql` | Three auto-derivation helpers used inside `upsert_lead`: `is_personal_email_domain()`, `normalize_company_domain()`, `extract_linkedin_username()`. |
 | `functions/upsert_lead.sql` | The single function Clay calls to upsert leads + insert email_outputs. |
+
+**Deploy order:** `clay_clean.sql` → `clay_helpers.sql` → `upsert_lead.sql` (upsert_lead depends on all of them).
 
 ## Deploy / re-deploy
 

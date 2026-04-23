@@ -5,82 +5,44 @@
 -- generated email outputs back into the TAM + Recipe DB.
 --
 -- One function, one HTTP endpoint, one body template — used across every
--- Clay table. Schema changes are made HERE (in this file) and propagate to
--- every Clay table automatically.
+-- Clay table. Schema changes are made HERE and propagate automatically.
 --
 -- Required parameters:
---   p_email         text   — primary dedup key, lowercased + trimmed
---   p_segment_ids   text   — comma-separated segment_id ints (e.g. "54" or "54,28,37")
---                            First segment is the "primary" — used for email_outputs.segment_id
+--   p_email         text  — primary dedup key, lowercased + trimmed
+--   p_segment_ids   text  — comma-separated segment_id ints (e.g. "54" or "54,28,37")
+--                           First segment is "primary" — used for email_outputs.segment_id
 --
 -- All other parameters are optional. Empty strings, NULLs, and Clay's
 -- "CLAYFORMATVALUE(...)" placeholders are normalized to NULL by clay_clean().
 --
+-- Auto-derived fields (if operator doesn't provide them):
+--   full_name           ← first_name + last_name
+--   company_domain      ← normalize_company_domain(company_website)
+--   linkedin_username   ← extract_linkedin_username(linkedin_profile_url)
+--   is_personal_email   ← is_personal_email_domain(email)
+--
+-- Recipe fallback (for email_outputs insert):
+--   If p_recipe_id is NULL and the row has email content, the function
+--   looks up the active recipe for the primary segment and uses it.
+--   Returns a clear error if no active recipe exists.
+--
 -- Side effects:
---   1. Upserts a row in `leads` (INSERT new email, or UPDATE existing — never
---      overwrites existing non-null with null; arrays unioned; jsonb merged).
+--   1. Upserts a row in `leads` (INSERT or UPDATE merging arrays + jsonb).
 --   2. If any p_email_*_variant_* is non-null, ALSO inserts a new row in
---      `email_outputs` linked to the lead, primary segment, recipe, etc.
+--      `email_outputs` linked to the lead, primary segment, recipe.
 --      Email outputs are append-only (every push creates a new row).
 --
--- Returns: { lead_id, lead_action, segment_ids_applied, output_id }
+-- Returns:
+--   { lead_id, lead_action, segment_ids_applied, recipe_id_used, output_id }
 --
--- Example call (from Clay's HTTP column body via Neon SQL-over-HTTP):
---   SELECT upsert_lead(
---     p_email := 'sarah@stripe.com',
---     p_segment_ids := '54',
---     p_first_name := 'Sarah',
---     p_company_name := 'Stripe',
---     p_extra_data_pairs := 'product_category|fintech;aov|420',
---     p_recipe_id := 51,
---     p_recipe_version := 1,
---     p_email_1_variant_a := 'Sarah, your checkout drop-off ...'
---   );
---
--- Depends on: clay_clean() — see clay_clean.sql
+-- Depends on:
+--   clay_clean() — clay_clean.sql
+--   is_personal_email_domain(), normalize_company_domain(), extract_linkedin_username() — clay_helpers.sql
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.upsert_lead(
-    p_email text,
-    p_segment_ids text,
-    p_first_name text DEFAULT NULL,
-    p_last_name text DEFAULT NULL,
-    p_full_name text DEFAULT NULL,
-    p_job_title text DEFAULT NULL,
-    p_linkedin_profile_url text DEFAULT NULL,
-    p_linkedin_username text DEFAULT NULL,
-    p_company_name text DEFAULT NULL,
-    p_company_domain text DEFAULT NULL,
-    p_company_website text DEFAULT NULL,
-    p_company_linkedin_url text DEFAULT NULL,
-    p_industry text DEFAULT NULL,
-    p_monthly_visits integer DEFAULT NULL,
-    p_employee_count text DEFAULT NULL,
-    p_email_verified text DEFAULT NULL,
-    p_email_verified_at text DEFAULT NULL,        -- accepts text; safely parsed to timestamptz
-    p_mx_provider text DEFAULT NULL,
-    p_has_email_security_gateway text DEFAULT NULL,
-    p_is_catchall text DEFAULT NULL,
-    p_is_personal_email boolean DEFAULT NULL,
-    p_city text DEFAULT NULL,
-    p_country text DEFAULT NULL,
-    p_info_tags text DEFAULT NULL,                -- comma-separated, parsed to text[]
-    p_extra_data_pairs text DEFAULT NULL,         -- pipe format: "key1|val1;key2|val2"
-    p_recipe_id integer DEFAULT NULL,
-    p_recipe_version integer DEFAULT NULL,
-    p_selected_approach text DEFAULT NULL,
-    p_batch_id text DEFAULT NULL,
-    p_email_1_variant_a text DEFAULT NULL,
-    p_email_1_variant_b text DEFAULT NULL,
-    p_email_2_variant_a text DEFAULT NULL,
-    p_email_2_variant_b text DEFAULT NULL,
-    p_email_3_variant_a text DEFAULT NULL,
-    p_email_3_variant_b text DEFAULT NULL,
-    p_company_summary text DEFAULT NULL,
-    p_personalizations_pairs text DEFAULT NULL    -- pipe format: "key1|val1;key2|val2"
-)
-RETURNS jsonb
-LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION public.upsert_lead(p_email text, p_segment_ids text, p_first_name text DEFAULT NULL::text, p_last_name text DEFAULT NULL::text, p_full_name text DEFAULT NULL::text, p_job_title text DEFAULT NULL::text, p_linkedin_profile_url text DEFAULT NULL::text, p_linkedin_username text DEFAULT NULL::text, p_company_name text DEFAULT NULL::text, p_company_domain text DEFAULT NULL::text, p_company_website text DEFAULT NULL::text, p_company_linkedin_url text DEFAULT NULL::text, p_industry text DEFAULT NULL::text, p_monthly_visits integer DEFAULT NULL::integer, p_employee_count text DEFAULT NULL::text, p_email_verified text DEFAULT NULL::text, p_email_verified_at text DEFAULT NULL::text, p_mx_provider text DEFAULT NULL::text, p_has_email_security_gateway text DEFAULT NULL::text, p_is_catchall text DEFAULT NULL::text, p_is_personal_email boolean DEFAULT NULL::boolean, p_city text DEFAULT NULL::text, p_country text DEFAULT NULL::text, p_info_tags text DEFAULT NULL::text, p_extra_data_pairs text DEFAULT NULL::text, p_recipe_id integer DEFAULT NULL::integer, p_recipe_version integer DEFAULT NULL::integer, p_selected_approach text DEFAULT NULL::text, p_batch_id text DEFAULT NULL::text, p_email_1_variant_a text DEFAULT NULL::text, p_email_1_variant_b text DEFAULT NULL::text, p_email_2_variant_a text DEFAULT NULL::text, p_email_2_variant_b text DEFAULT NULL::text, p_email_3_variant_a text DEFAULT NULL::text, p_email_3_variant_b text DEFAULT NULL::text, p_company_summary text DEFAULT NULL::text, p_personalizations_pairs text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
 AS $function$
 DECLARE
     v_email text;
@@ -96,7 +58,9 @@ DECLARE
     v_has_email_output boolean;
     v_unknown_segments int[];
     v_email_verified_at_ts timestamptz := NULL;
-    -- Cleaned versions of every text input (Clay placeholders → NULL)
+    v_effective_recipe_id int;
+    v_effective_recipe_version int;
+    -- Cleaned inputs
     v_first_name text := clay_clean(p_first_name);
     v_last_name text := clay_clean(p_last_name);
     v_full_name text := clay_clean(p_full_name);
@@ -113,6 +77,7 @@ DECLARE
     v_mx_provider text := clay_clean(p_mx_provider);
     v_has_email_security_gateway text := clay_clean(p_has_email_security_gateway);
     v_is_catchall text := clay_clean(p_is_catchall);
+    v_is_personal_email boolean := p_is_personal_email;
     v_city text := clay_clean(p_city);
     v_country text := clay_clean(p_country);
     v_info_tags text := clay_clean(p_info_tags);
@@ -129,68 +94,84 @@ DECLARE
     v_personalizations_pairs text := clay_clean(p_personalizations_pairs);
     v_email_verified_at_clean text := clay_clean(p_email_verified_at);
 BEGIN
-    -- ── Required field validation ──────────────────────────────────────────
+    -- Required: email
     v_email := LOWER(TRIM(clay_clean(p_email)));
     IF v_email IS NULL OR v_email = '' THEN
         RAISE EXCEPTION 'p_email is required and cannot be empty';
     END IF;
 
+    -- Required: segment_ids
     DECLARE
         v_seg_clean text := clay_clean(p_segment_ids);
     BEGIN
         IF v_seg_clean IS NULL OR TRIM(v_seg_clean) = '' THEN
             RAISE EXCEPTION 'p_segment_ids is required (comma-separated, e.g. ''54'' or ''54,28'')';
         END IF;
-        SELECT ARRAY(
-            SELECT DISTINCT TRIM(s)::int FROM unnest(string_to_array(v_seg_clean, ',')) AS s WHERE TRIM(s) <> ''
-        ) INTO v_segment_ids_array;
+        SELECT ARRAY(SELECT DISTINCT TRIM(s)::int FROM unnest(string_to_array(v_seg_clean, ',')) AS s WHERE TRIM(s) <> '') INTO v_segment_ids_array;
     END;
     IF array_length(v_segment_ids_array, 1) IS NULL THEN
         RAISE EXCEPTION 'p_segment_ids did not contain any valid integers';
     END IF;
-
     SELECT ARRAY(SELECT s FROM unnest(v_segment_ids_array) s WHERE NOT EXISTS (SELECT 1 FROM segments WHERE segment_id = s)) INTO v_unknown_segments;
     IF array_length(v_unknown_segments, 1) IS NOT NULL THEN
         RAISE EXCEPTION 'These segment_ids do not exist: %', v_unknown_segments;
     END IF;
     v_primary_segment_id := v_segment_ids_array[1];
 
-    -- ── Safe timestamp parse (bad input → NULL, doesn't fail the row) ──────
+    -- ── AUTO-DERIVE missing fields (the Supabase-era behaviors) ──────────
+    -- Auto: company_domain from company_website if domain not provided
+    IF v_company_domain IS NULL AND v_company_website IS NOT NULL THEN
+        v_company_domain := normalize_company_domain(v_company_website);
+    END IF;
+
+    -- Auto: linkedin_username from linkedin_profile_url if username not provided
+    IF v_linkedin_username IS NULL AND v_linkedin_profile_url IS NOT NULL THEN
+        v_linkedin_username := extract_linkedin_username(v_linkedin_profile_url);
+    END IF;
+
+    -- Auto: is_personal_email from email domain if not explicitly set
+    IF v_is_personal_email IS NULL THEN
+        v_is_personal_email := is_personal_email_domain(v_email);
+    END IF;
+
+    -- Auto: full_name from first + last if not provided
+    IF v_full_name IS NULL AND (v_first_name IS NOT NULL OR v_last_name IS NOT NULL) THEN
+        v_full_name := TRIM(CONCAT_WS(' ', v_first_name, v_last_name));
+        IF v_full_name = '' THEN v_full_name := NULL; END IF;
+    END IF;
+
+    -- Safe timestamp parse
     IF v_email_verified_at_clean IS NOT NULL AND TRIM(v_email_verified_at_clean) <> '' THEN
         BEGIN
             v_email_verified_at_ts := v_email_verified_at_clean::timestamptz;
-        EXCEPTION WHEN OTHERS THEN
-            v_email_verified_at_ts := NULL;
+        EXCEPTION WHEN OTHERS THEN v_email_verified_at_ts := NULL;
         END;
     END IF;
 
-    -- ── Parse info_tags (comma-separated → text[]) ────────────────────────
+    -- Parse info_tags
     IF v_info_tags IS NOT NULL AND v_info_tags <> '' THEN
         SELECT ARRAY(SELECT TRIM(t) FROM unnest(string_to_array(v_info_tags, ',')) AS t WHERE TRIM(t) <> '') INTO v_info_tags_array;
     ELSE
         v_info_tags_array := ARRAY[]::text[];
     END IF;
 
-    -- ── Parse extra_data pairs ("key1|val1;key2|val2" → jsonb) ─────────────
-    -- Skips pairs where value is empty or matches CLAYFORMATVALUE pattern
+    -- Parse extra_data pairs
     IF v_extra_data_pairs IS NOT NULL AND v_extra_data_pairs <> '' THEN
         SELECT COALESCE(jsonb_object_agg(TRIM(split_part(pair, '|', 1)), TRIM(split_part(pair, '|', 2))), '{}'::jsonb)
         INTO v_extra_data FROM unnest(string_to_array(v_extra_data_pairs, ';')) AS pair
-        WHERE TRIM(split_part(pair, '|', 1)) <> ''
-          AND TRIM(split_part(pair, '|', 2)) <> ''
+        WHERE TRIM(split_part(pair, '|', 1)) <> '' AND TRIM(split_part(pair, '|', 2)) <> ''
           AND TRIM(split_part(pair, '|', 2)) !~ '^CLAYFORMATVALUE\(.*\)$';
     END IF;
 
-    -- ── Parse personalizations pairs (same format) ────────────────────────
+    -- Parse personalizations
     IF v_personalizations_pairs IS NOT NULL AND v_personalizations_pairs <> '' THEN
         SELECT COALESCE(jsonb_object_agg(TRIM(split_part(pair, '|', 1)), TRIM(split_part(pair, '|', 2))), '{}'::jsonb)
         INTO v_personalizations FROM unnest(string_to_array(v_personalizations_pairs, ';')) AS pair
-        WHERE TRIM(split_part(pair, '|', 1)) <> ''
-          AND TRIM(split_part(pair, '|', 2)) <> ''
+        WHERE TRIM(split_part(pair, '|', 1)) <> '' AND TRIM(split_part(pair, '|', 2)) <> ''
           AND TRIM(split_part(pair, '|', 2)) !~ '^CLAYFORMATVALUE\(.*\)$';
     END IF;
 
-    -- ── Upsert lead ───────────────────────────────────────────────────────
+    -- Upsert lead
     INSERT INTO leads (
         email, first_name, last_name, full_name, job_title,
         linkedin_profile_url, linkedin_username,
@@ -205,7 +186,7 @@ BEGIN
         v_company_name, v_company_domain, v_company_website, v_company_linkedin_url,
         v_industry, p_monthly_visits, v_employee_count,
         v_email_verified, v_email_verified_at_ts, v_mx_provider, v_has_email_security_gateway,
-        v_is_catchall, p_is_personal_email, v_city, v_country,
+        v_is_catchall, v_is_personal_email, v_city, v_country,
         v_segment_ids_array, v_info_tags_array, v_extra_data
     )
     ON CONFLICT (email) DO UPDATE SET
@@ -235,21 +216,38 @@ BEGIN
         extra_data                 = COALESCE(leads.extra_data, '{}'::jsonb) || EXCLUDED.extra_data
     RETURNING lead_id, (xmax = 0) INTO v_lead_id, v_inserted;
 
-    -- ── Conditional email_outputs insert ──────────────────────────────────
-    -- Triggered ONLY if at least one cleaned email variant has real content
-    v_has_email_output := (
-        v_e1a IS NOT NULL OR v_e1b IS NOT NULL OR
-        v_e2a IS NOT NULL OR v_e2b IS NOT NULL OR
-        v_e3a IS NOT NULL OR v_e3b IS NOT NULL
-    );
+    -- Email outputs branch
+    v_has_email_output := (v_e1a IS NOT NULL OR v_e1b IS NOT NULL OR v_e2a IS NOT NULL OR v_e2b IS NOT NULL OR v_e3a IS NOT NULL OR v_e3b IS NOT NULL);
 
     IF v_has_email_output THEN
         SELECT client_id INTO v_client_id FROM segments WHERE segment_id = v_primary_segment_id;
-        IF p_recipe_id IS NOT NULL THEN
-            IF NOT EXISTS (SELECT 1 FROM recipes WHERE recipe_id = p_recipe_id AND segment_id = v_primary_segment_id) THEN
-                RAISE EXCEPTION 'p_recipe_id % does not match the primary segment (first in p_segment_ids: %)', p_recipe_id, v_primary_segment_id;
+
+        -- ── RECIPE_ID FALLBACK ────────────────────────────────────────
+        -- If operator didn't pass recipe_id, look up the active recipe for the primary segment
+        v_effective_recipe_id := p_recipe_id;
+        v_effective_recipe_version := p_recipe_version;
+
+        IF v_effective_recipe_id IS NULL THEN
+            SELECT recipe_id, version
+            INTO v_effective_recipe_id, v_effective_recipe_version
+            FROM recipes
+            WHERE segment_id = v_primary_segment_id AND status = 'active'
+            ORDER BY version DESC LIMIT 1;
+
+            IF v_effective_recipe_id IS NULL THEN
+                RAISE EXCEPTION 'No active recipe found for segment %; either create one or pass p_recipe_id explicitly', v_primary_segment_id;
+            END IF;
+        ELSE
+            -- Operator provided recipe_id — validate it belongs to the primary segment
+            IF NOT EXISTS (SELECT 1 FROM recipes WHERE recipe_id = v_effective_recipe_id AND segment_id = v_primary_segment_id) THEN
+                RAISE EXCEPTION 'p_recipe_id % does not belong to primary segment %', v_effective_recipe_id, v_primary_segment_id;
+            END IF;
+            -- If version wasn't passed, look it up from the recipe row
+            IF v_effective_recipe_version IS NULL THEN
+                SELECT version INTO v_effective_recipe_version FROM recipes WHERE recipe_id = v_effective_recipe_id;
             END IF;
         END IF;
+
         INSERT INTO email_outputs (
             lead_id, client_id, segment_id, recipe_id, recipe_version,
             selected_approach, batch_id, company_summary,
@@ -259,7 +257,7 @@ BEGIN
             personalizations
         ) VALUES (
             v_lead_id, v_client_id, v_primary_segment_id,
-            p_recipe_id, COALESCE(p_recipe_version, 1),
+            v_effective_recipe_id, COALESCE(v_effective_recipe_version, 1),
             v_selected_approach, v_batch_id, v_company_summary,
             v_e1a, v_e1b, v_e2a, v_e2b, v_e3a, v_e3b,
             v_personalizations
@@ -267,12 +265,13 @@ BEGIN
         RETURNING output_id INTO v_output_id;
     END IF;
 
-    -- ── Return result ─────────────────────────────────────────────────────
     RETURN jsonb_build_object(
         'lead_id', v_lead_id,
         'lead_action', CASE WHEN v_inserted THEN 'inserted' ELSE 'updated' END,
         'segment_ids_applied', v_segment_ids_array,
+        'recipe_id_used', v_effective_recipe_id,
         'output_id', v_output_id
     );
 END;
-$function$;
+$function$
+
