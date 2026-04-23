@@ -48,9 +48,11 @@ docs.
 
 ## Body — paste this verbatim
 
+**34 slots.** `linkedin_username`, `company_domain`, `is_personal_email` are NOT in the body — the function auto-derives them from other fields (see "Auto-derived fields" below). That's 3 less columns for the operator to map per Clay table.
+
 ```json
 {
-  "query": "SELECT upsert_lead(p_email := $1, p_segment_ids := $2, p_first_name := NULLIF($3, ''), p_last_name := NULLIF($4, ''), p_full_name := NULLIF($5, ''), p_job_title := NULLIF($6, ''), p_linkedin_profile_url := NULLIF($7, ''), p_linkedin_username := NULLIF($8, ''), p_company_name := NULLIF($9, ''), p_company_domain := NULLIF($10, ''), p_company_website := NULLIF($11, ''), p_company_linkedin_url := NULLIF($12, ''), p_industry := NULLIF($13, ''), p_monthly_visits := NULLIF($14, '')::int, p_employee_count := NULLIF($15, ''), p_email_verified := NULLIF($16, ''), p_email_verified_at := NULLIF($17, ''), p_mx_provider := NULLIF($18, ''), p_has_email_security_gateway := NULLIF($19, ''), p_is_catchall := NULLIF($20, ''), p_is_personal_email := NULLIF($21, '')::boolean, p_city := NULLIF($22, ''), p_country := NULLIF($23, ''), p_info_tags := NULLIF($24, ''), p_extra_data_pairs := NULLIF($25, ''), p_recipe_id := NULLIF($26, '')::int, p_recipe_version := NULLIF($27, '')::int, p_selected_approach := NULLIF($28, ''), p_batch_id := NULLIF($29, ''), p_email_1_variant_a := NULLIF($30, ''), p_email_1_variant_b := NULLIF($31, ''), p_email_2_variant_a := NULLIF($32, ''), p_email_2_variant_b := NULLIF($33, ''), p_email_3_variant_a := NULLIF($34, ''), p_email_3_variant_b := NULLIF($35, ''), p_company_summary := NULLIF($36, ''), p_personalizations_pairs := NULLIF($37, ''))",
+  "query": "SELECT upsert_lead(p_email := $1, p_segment_ids := $2, p_first_name := NULLIF($3, ''), p_last_name := NULLIF($4, ''), p_full_name := NULLIF($5, ''), p_job_title := NULLIF($6, ''), p_linkedin_profile_url := NULLIF($7, ''), p_company_name := NULLIF($8, ''), p_company_website := NULLIF($9, ''), p_company_linkedin_url := NULLIF($10, ''), p_industry := NULLIF($11, ''), p_monthly_visits := NULLIF($12, '')::int, p_employee_count := NULLIF($13, ''), p_email_verified := NULLIF($14, ''), p_email_verified_at := NULLIF($15, ''), p_mx_provider := NULLIF($16, ''), p_has_email_security_gateway := NULLIF($17, ''), p_is_catchall := NULLIF($18, ''), p_city := NULLIF($19, ''), p_country := NULLIF($20, ''), p_info_tags := NULLIF($21, ''), p_extra_data_pairs := NULLIF($22, ''), p_recipe_id := NULLIF($23, '')::int, p_recipe_version := NULLIF($24, '')::int, p_selected_approach := NULLIF($25, ''), p_batch_id := NULLIF($26, ''), p_email_1_variant_a := NULLIF($27, ''), p_email_1_variant_b := NULLIF($28, ''), p_email_2_variant_a := NULLIF($29, ''), p_email_2_variant_b := NULLIF($30, ''), p_email_3_variant_a := NULLIF($31, ''), p_email_3_variant_b := NULLIF($32, ''), p_company_summary := NULLIF($33, ''), p_personalizations_pairs := NULLIF($34, ''))",
   "params": [
     "{{Email}}",
     "<SEGMENT_ID>",
@@ -59,9 +61,7 @@ docs.
     "{{Full Name}}",
     "{{Title}}",
     "{{Personal LinkedIn URL}}",
-    "{{LinkedIn Username}}",
     "{{Company Name}}",
-    "{{Company Domain}}",
     "{{Company Website}}",
     "{{Company LinkedIn URL}}",
     "{{Industry}}",
@@ -72,7 +72,6 @@ docs.
     "{{MX Provider}}",
     "{{Has ESG}}",
     "{{Is Catchall}}",
-    "{{Is Personal Email}}",
     "{{City}}",
     "{{Country}}",
     "<INFO_TAGS>",
@@ -103,29 +102,98 @@ literal string for that table:
 | Slot | Placeholder | What to put | Example |
 |---:|---|---|---|
 | 2 | `<SEGMENT_ID>` | The segment_id (or comma-separated multi) this Clay table pushes into. Required. | `"54"` (test segment) or `"28,37"` (multi) |
-| 24 | `<INFO_TAGS>` | A label tagging which Clay table this came from. Comma-separated for multiple. | `"Gambling Apollo Table, 2026-04-23"` |
-| 25 | `<EXTRA_DATA_BUILDER>` | Pipe/semicolon recipe building extra_data jsonb from Clay columns. NOT JSON. | `"product_category|{{Product Category}};aov|{{AOV}}"` or `""` if none |
-| 26 | `<RECIPE_ID_OR_EMPTY>` | recipe_id of the active recipe for this segment (only when generating emails). | `"51"` or `""` for enrichment-only |
-| 27 | `<RECIPE_VERSION_OR_EMPTY>` | Version of that recipe. | `"1"` or `""` for enrichment-only |
-| 37 | `<PERSONALIZATIONS_BUILDER_OR_EMPTY>` | Same pipe format as extra_data, building personalizations jsonb for email_outputs. | `"first_line|{{First Line}};research_report|{{Research Report}}"` or `""` |
+| 21 | `<INFO_TAGS>` | A label tagging which Clay table this came from. Comma-separated for multiple. | `"Gambling Apollo Table, 2026-04-23"` |
+| 22 | `<EXTRA_DATA_BUILDER>` | Pipe/semicolon recipe building extra_data jsonb from Clay columns. NOT JSON. | `"product_category|{{Product Category}};aov|{{AOV}}"` or `""` if none |
+| 23 | `<RECIPE_ID_OR_EMPTY>` | recipe_id of the active recipe for this segment (only when generating emails). | `"51"` or `""` for enrichment-only |
+| 24 | `<RECIPE_VERSION_OR_EMPTY>` | Version of that recipe. | `"1"` or `""` for enrichment-only |
+| 34 | `<PERSONALIZATIONS_BUILDER_OR_EMPTY>` | Same pipe format as extra_data, building personalizations jsonb for email_outputs. | `"first_line|{{First Line}};research_report|{{Research Report}}"` or `""` |
 
-The remaining 31 slots are `{{Clay Variable}}` placeholders. Clay's
-"Apply template" UI will show each as a dropdown — pick the matching Clay
-column. If the Clay table doesn't have that column, leave the dropdown
-unmapped and Clay will pass an empty string (the function treats it as
-NULL).
+The remaining 28 slots are `{{Clay Variable}}` placeholders for per-row
+data. Clay's "Apply template" UI shows each as a dropdown — pick the
+matching Clay column. For columns your Clay table doesn't have, see the
+next section on the "Don't have it" workaround.
 
 ---
 
 ## Required vs optional
 
-- **Required** (function errors if missing): `Email`, `<SEGMENT_ID>`
-- **Optional**: everything else
+- **Required on the database side** (function errors if missing): `Email`, `<SEGMENT_ID>`
+- **Optional on the database side**: everything else
 
 Empty strings, NULLs, and Clay's `CLAYFORMATVALUE(...)` empty-format
 placeholders are all normalized to NULL by the `clay_clean()` helper
 inside the function. No row will fail because of empty data — only because
 of bad data (e.g. non-int in segment_id, non-existent segment_id, etc.).
+
+### `monthly_visits` accepts Clay display formats
+
+Slot 12 (`p_monthly_visits`) is parsed via `parse_int_flex()`, so you can
+map either a raw integer column (e.g. `Visits` = `10200`) or Clay's
+display-formatted version (e.g. `Formatted Visits` = `10.2K`) — both work.
+
+| Clay cell value | Stored as |
+|---|---:|
+| `10200` | 10200 |
+| `10.2K` / `10.2k` | 10200 |
+| `1.5M` | 1,500,000 |
+| `2B` | 2,000,000,000 |
+| `10,200` | 10200 |
+| `$42.5K` | 42500 |
+| `abc` or other junk | NULL (row still succeeds) |
+
+---
+
+## Operator protocol when applying the template
+
+Clay's "Apply template" UI has two quirks that catch operators off guard
+every time. Read this before your first push, or you'll spend 15 minutes
+debugging a 400.
+
+### Quirk 1: Clay treats every template variable as "required" by default
+
+Even though the database accepts nulls for almost everything, Clay will
+block the HTTP column from running until every variable has either (a) a
+Clay column mapped, or (b) the **Required toggle turned OFF**.
+
+**What to do:** when you apply the template, walk down the variable list
+and **toggle OFF the "Required" switch for every variable except `Email`
+and `p_segments_ids`**. Those two stay required. Everything else goes
+off.
+
+### Quirk 2: Every variable still needs SOMETHING mapped to run
+
+Even after toggling off "Required", Clay won't fire the HTTP column if a
+variable has no mapping. You can't just leave it blank.
+
+**Workaround: the "Don't have it" column.** Create an always-blank column
+in every Clay table you use this template with. Call it literally
+`Don't have it`. When a template variable asks for a Clay column your
+table doesn't have, map it to the `Don't have it` column. Clay sends the
+blank value, `clay_clean()` normalizes it to NULL inside the function,
+and the row processes fine.
+
+### The minimum Clay columns every table needs for this template
+
+Three non-negotiables for a smooth push:
+
+| Clay column | Type | Purpose |
+|---|---|---|
+| `Email` | text | Maps to slot 1, the dedup key |
+| `p_segments_ids` | text | Maps to slot 2, which segment(s) to file the lead into. Single `"54"` or comma-separated `"54,28"`. |
+| `Don't have it` | text (always blank) | Maps to any variable your table doesn't have a real column for |
+
+### Operator checklist for each new Clay table
+
+1. Add `Email`, `p_segments_ids`, and `Don't have it` columns if missing.
+2. Populate `p_segments_ids` with the segment_id(s) for this table.
+3. Add the HTTP column, paste the URL + headers + body from this doc.
+4. Replace the 6 `<...>` placeholders in the body with this table's values.
+5. In the "Apply template" variable panel, toggle OFF "Required" for every
+   variable except `Email` and `p_segments_ids`.
+6. Map each `{{Clay Variable}}` dropdown:
+   - If the table has a matching column → pick it.
+   - If the table doesn't → pick `Don't have it`.
+7. Run on 1 row first. Check Neon. If clean, run the rest.
 
 ## Auto-derived fields
 
@@ -143,9 +211,15 @@ These used to be automatic on Supabase — now reimplemented in
 `db/functions/clay_helpers.sql`. If the operator DOES provide a value,
 the provided value wins over auto-derivation.
 
+**This is why `linkedin_username`, `company_domain`, and
+`is_personal_email` are NOT in the body's 34 slots** — the function
+handles them. The operator only needs to provide `linkedin_profile_url`,
+`company_website`, and `email` (which is the dedup key anyway). Saves 3
+Clay column mappings per table.
+
 ## recipe_id — can be left empty
 
-Slots 26 (`p_recipe_id`) and 27 (`p_recipe_version`) can both be `""` even
+Slots 23 (`p_recipe_id`) and 24 (`p_recipe_version`) can both be `""` even
 when generating emails. The function auto-falls back to the **active
 recipe for the primary segment** (first segment_id in slot 2). Only pass
 an explicit recipe_id when you need a specific one (e.g. testing a
