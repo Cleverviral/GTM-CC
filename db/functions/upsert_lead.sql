@@ -12,6 +12,15 @@
 --   p_segment_ids   text  — comma-separated segment_id ints (e.g. "54" or "54,28,37")
 --                           First segment is "primary" — used for email_outputs.segment_id
 --
+-- Merge rules (single guiding principle — "new data never destroys old data"):
+--   SCALAR fields  — COALESCE(new, existing). New wins if non-null; else keep.
+--   ARRAY fields   — segment_ids, info_tags: if incoming empty → keep existing;
+--                    if incoming has elements → union merge, dedupe, sort.
+--                    Never return NULL (empty array instead).
+--   JSONB fields   — extra_data: if incoming empty → keep existing;
+--                    if incoming has keys → jsonb merge (new wins per key).
+--                    Never return NULL.
+--
 -- All other parameters are optional. Empty strings, NULLs, and Clay's
 -- "CLAYFORMATVALUE(...)" placeholders are normalized to NULL by clay_clean().
 --
@@ -68,7 +77,6 @@ DECLARE
     v_effective_recipe_id int;
     v_effective_recipe_version int;
     v_monthly_visits_int int;
-    -- Cleaned inputs
     v_first_name text := clay_clean(p_first_name);
     v_last_name text := clay_clean(p_last_name);
     v_full_name text := clay_clean(p_full_name);
@@ -106,9 +114,7 @@ BEGIN
     IF v_email IS NULL OR v_email = '' THEN
         RAISE EXCEPTION 'p_email is required and cannot be empty';
     END IF;
-
-    DECLARE
-        v_seg_clean text := clay_clean(p_segment_ids);
+    DECLARE v_seg_clean text := clay_clean(p_segment_ids);
     BEGIN
         IF v_seg_clean IS NULL OR TRIM(v_seg_clean) = '' THEN
             RAISE EXCEPTION 'p_segment_ids is required (comma-separated, e.g. ''54'' or ''54,28'')';
@@ -123,11 +129,8 @@ BEGIN
         RAISE EXCEPTION 'These segment_ids do not exist: %', v_unknown_segments;
     END IF;
     v_primary_segment_id := v_segment_ids_array[1];
-
-    -- Parse monthly_visits via flex parser (handles K/M/B/commas/$)
     v_monthly_visits_int := parse_int_flex(p_monthly_visits);
 
-    -- Auto-derive fields
     IF v_full_name IS NULL AND (v_first_name IS NOT NULL OR v_last_name IS NOT NULL) THEN
         v_full_name := TRIM(CONCAT_WS(' ', v_first_name, v_last_name));
     END IF;
@@ -141,12 +144,9 @@ BEGIN
         v_is_personal_email := is_personal_email_domain(v_email);
     END IF;
 
-    -- Safe timestamp parse
     IF v_email_verified_at_clean IS NOT NULL AND TRIM(v_email_verified_at_clean) <> '' THEN
-        BEGIN
-            v_email_verified_at_ts := v_email_verified_at_clean::timestamptz;
-        EXCEPTION WHEN OTHERS THEN
-            v_email_verified_at_ts := NULL;
+        BEGIN v_email_verified_at_ts := v_email_verified_at_clean::timestamptz;
+        EXCEPTION WHEN OTHERS THEN v_email_verified_at_ts := NULL;
         END;
     END IF;
 
@@ -211,9 +211,26 @@ BEGIN
         is_personal_email          = COALESCE(EXCLUDED.is_personal_email, leads.is_personal_email),
         city                       = COALESCE(EXCLUDED.city, leads.city),
         country                    = COALESCE(EXCLUDED.country, leads.country),
-        segment_ids                = (SELECT array_agg(DISTINCT s) FROM unnest(leads.segment_ids || EXCLUDED.segment_ids) s),
-        info_tags                  = (SELECT array_agg(DISTINCT t) FROM unnest(leads.info_tags || EXCLUDED.info_tags) t),
-        extra_data                 = COALESCE(leads.extra_data, '{}'::jsonb) || EXCLUDED.extra_data
+        -- FIXED: array merges — if EXCLUDED is empty, keep existing. Never produce NULL.
+        segment_ids = CASE
+            WHEN COALESCE(array_length(EXCLUDED.segment_ids, 1), 0) = 0 THEN COALESCE(leads.segment_ids, ARRAY[]::int[])
+            ELSE COALESCE(
+                (SELECT array_agg(DISTINCT s ORDER BY s) FROM unnest(COALESCE(leads.segment_ids, ARRAY[]::int[]) || EXCLUDED.segment_ids) s),
+                COALESCE(leads.segment_ids, ARRAY[]::int[])
+            )
+        END,
+        info_tags = CASE
+            WHEN COALESCE(array_length(EXCLUDED.info_tags, 1), 0) = 0 THEN COALESCE(leads.info_tags, ARRAY[]::text[])
+            ELSE COALESCE(
+                (SELECT array_agg(DISTINCT t ORDER BY t) FROM unnest(COALESCE(leads.info_tags, ARRAY[]::text[]) || EXCLUDED.info_tags) t),
+                COALESCE(leads.info_tags, ARRAY[]::text[])
+            )
+        END,
+        -- FIXED: jsonb merge — if EXCLUDED is empty, keep existing. Never produce NULL.
+        extra_data = CASE
+            WHEN EXCLUDED.extra_data IS NULL OR EXCLUDED.extra_data = '{}'::jsonb THEN COALESCE(leads.extra_data, '{}'::jsonb)
+            ELSE COALESCE(leads.extra_data, '{}'::jsonb) || EXCLUDED.extra_data
+        END
     RETURNING lead_id, (xmax = 0) INTO v_lead_id, v_inserted;
 
     v_has_email_output := (
@@ -221,7 +238,6 @@ BEGIN
         v_e2a IS NOT NULL OR v_e2b IS NOT NULL OR
         v_e3a IS NOT NULL OR v_e3b IS NOT NULL
     );
-
     IF v_has_email_output THEN
         SELECT client_id INTO v_client_id FROM segments WHERE segment_id = v_primary_segment_id;
         IF p_recipe_id IS NOT NULL THEN
