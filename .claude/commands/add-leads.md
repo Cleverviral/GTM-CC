@@ -53,6 +53,8 @@ Map CSV headers to DB columns using fuzzy matching. The mapping rules:
 | industry | industry, sector |
 | monthly_visits | monthly_visits, monthlyvisits, monthly visits, traffic, visits |
 | employee_count | employee_count, employeecount, employees, employee count, company_size, headcount |
+| clay_table_names | clay_table_names, clay table name, clay table names, clay_table_name (parsed comma-separated into text[]) |
+| info_tags | info_tags, info tags, tags (parsed comma-separated into text[]) |
 
 ### Columns that NEVER get auto-mapped (operator chooses):
 - Any unrecognized column → offer: "Skip" or "Store in extra_data as '{key_name}'"

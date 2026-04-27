@@ -25,9 +25,9 @@ Run `get_segments(client_id)` for the chosen client.
 
 Show segments as a numbered menu with lead counts:
 > **Which segment?**
-> 1. 1M+ Qualified (segment_id: 1) — 100 leads
-> 2. 100K-1M Qualified (segment_id: 2) — 250 leads
-> (etc.)
+> 1. SpeedSize 1M+ Qualified (segment_id: 28) — 1,240 leads
+> 2. SpeedSize 100K-1M (segment_id: 37) — 4,820 leads
+> (etc. — pull live from the segments table; segment_ids in this DB live in the 28–54 range)
 
 For each segment, also run `get_lead_count(segment_id)` to show how many leads are available.
 
@@ -40,6 +40,8 @@ Ask:
 > - Email verified only? (yes/no)
 > - Minimum monthly visits? (e.g., 100000)
 > - Specific country? (e.g., US)
+> - Filter by Clay table lineage? (e.g., only leads where `clay_table_names` includes a specific table — useful for re-running just one Clay batch)
+> - Filter by info_tags? (e.g., `ss-qualified-feb26`, `builtwith-data`)
 
 Build the filters dict from their answers.
 

@@ -23,8 +23,9 @@ Once identified, confirm their role and show available commands:
 > | `/pull-leads` | Pull leads for a client+segment (guided) |
 > | `/add-leads` | Import leads from CSV into a segment |
 > | `/push-to-clay` | Push leads to a Clay table via webhook |
-> | `/generate-http-query` | Generate HTTP push-back query for Clay |
-> | `/check-outputs` | View email output stats |
+> | `/generate-http-query` | Generate HTTP push-back body for a Clay table (calls `upsert_lead`) |
+> | `/check-outputs` | View email output stats (incl. personalizations + clay_table_names lineage) |
+> | `/inspect-extra-data` | Browse `extra_data` keys + fill rates per segment |
 > | `/export-csv` | Export leads + emails as CSV |
 >
 > You also have full access to custom SQL queries (with safety rules).
@@ -38,8 +39,9 @@ Once identified, confirm their role and show available commands:
 > | `/pull-leads` | Pull leads for a client+segment (guided) |
 > | `/add-leads` | Import leads from CSV into a segment |
 > | `/push-to-clay` | Push leads to a Clay table via webhook |
-> | `/generate-http-query` | Generate HTTP push-back query for Clay |
-> | `/check-outputs` | View email output stats |
+> | `/generate-http-query` | Generate the HTTP body for a Clay table (calls `upsert_lead`) |
+> | `/inspect-extra-data` | Browse `extra_data` keys + fill rates per segment |
+> | `/check-outputs` | View email output stats (read-only) |
 > | `/export-csv` | Export leads + emails as CSV |
 >
 > **Start with `/pull-leads` for your typical workflow.**
@@ -50,7 +52,8 @@ Once identified, confirm their role and show available commands:
 > Your commands:
 > | Command | What It Does |
 > |---------|-------------|
-> | `/check-outputs` | View email output stats |
+> | `/check-outputs` | View email output stats (incl. personalizations + clay_table_names lineage) |
+> | `/inspect-extra-data` | Browse `extra_data` keys + fill rates per segment |
 > | `/export-csv` | Export leads + emails as CSV |
 >
 > You have read-only access — nothing can be accidentally modified.

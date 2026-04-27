@@ -78,7 +78,7 @@ leads = read_query("""
            l.industry, l.employee_count, l.monthly_visits,
            l.email_verified, l.email_verified_at, l.is_catchall, l.mx_provider,
            l.has_email_security_gateway, l.is_personal_email, l.city, l.country,
-           l.extra_data, l.info_tags, l.segment_ids
+           l.extra_data, l.info_tags, l.clay_table_names, l.segment_ids
     FROM leads l
     WHERE l.segment_ids @> ARRAY[$1]::int[]
     ORDER BY l.lead_id
@@ -86,7 +86,7 @@ leads = read_query("""
 """, [segment_id])
 ```
 
-**Note:** `lcp`, `tti`, `aov` are NOT dedicated columns — they live in `extra_data` and get flattened into the Clay payload automatically (see Step 3).
+**Note:** `lcp`, `tti`, `aov` are NOT dedicated columns — they live in `extra_data` and get flattened into the Clay payload automatically (see Step 3). `clay_table_names` is also pulled — it travels with the lead so the Clay table can see prior-table lineage.
 
 For each lead, check for existing outputs and build the payload:
 
@@ -167,11 +167,14 @@ Never skip any of the core fields below. Every `leads.extra_data` key flattens a
 | | 33 | existing_email_2_variant_b | email_outputs (latest) |
 | | 34 | existing_email_3_variant_a | email_outputs (latest) |
 | | 35 | existing_email_3_variant_b | email_outputs (latest) |
+| Lineage | 36 | clay_table_names | leads.clay_table_names (joined as comma-separated) |
 | extra_data | N | Every `extra_data` key becomes its own Clay column | leads.extra_data |
 
-Fields 29-35 are NULL for fresh leads. Fields 13 (monthly_visits) can be NULL — SpeedSize + some segments have mv gaps.
+Fields 29-35 are NULL for fresh leads. Field 13 (monthly_visits) can be NULL — SpeedSize + some segments have mv gaps.
 
 `lcp`, `tti`, `aov` are NOT dedicated payload fields — they flow through as extra_data keys (e.g. `crux_lcp_p75`, `aov`) if present on the lead.
+
+`clay_table_names` is the operational lineage — list of Clay table names this lead has been pushed from previously. Push as a comma-separated string so the Clay table can see prior lineage. Push-back uses the universal `upsert_lead()` body (see `docs/clay-http-template.md`, slot 23 `<CLAY_TABLE_NAMES>`); the operator should set that placeholder to this Clay table's own name so each push appends lineage.
 
 ## Step 4: Preview
 
@@ -228,13 +231,12 @@ Handle errors gracefully:
 > **Next steps for the Clay Operator:**
 > 1. Verify all core + extra_data columns appear in Clay table
 > 2. Set up verification waterfall
-> 3. Add HTTP Column 1 — verification push-back to Neon
-> 4. Add enrichment columns per recipe instructions
-> 5. Add HTTP Column 2 — enrichment push-back to Neon (writes into `leads.extra_data` + verification fields)
-> 6. Add email generation columns per recipe (use saved Clay template)
-> 7. Add HTTP Column 3 — email output push-back to Neon (INSERTs into `email_outputs`)
-> 8. Test with 5 leads — verify all HTTP columns fire correctly
-> 9. Run the full table
+> 3. Add enrichment columns per recipe instructions
+> 4. Add email generation columns per recipe (use saved Clay template)
+> 5. Add **one** HTTP column that calls `upsert_lead()` — use the universal body in `docs/clay-http-template.md`. Run `/generate-http-query` to get a ready-to-paste body for this Clay table (verification + enrichment + emails all flow through this single column).
+> 6. Test with 1 row first — verify the response cell returns `{"upsert_lead": {"lead_id": ..., "lead_action": "...", "output_id": ...}}` and `clay_table_names` in Neon includes this Clay table's name
+> 7. Test with 5 more leads — confirm extra_data merges, info_tags merges, no `truee`/`falsee` typos in verification fields
+> 8. Run the full table
 
 ## Important Notes
 

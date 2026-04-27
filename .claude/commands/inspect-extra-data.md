@@ -103,8 +103,32 @@ FROM leads
 WHERE $1 = ANY(segment_ids) AND (extra_data IS NULL OR NOT extra_data ? $2)
 ```
 
+## Step 5: Related Lineage Columns (optional)
+
+`clay_table_names` and `info_tags` are array columns on `leads` (NOT keys inside `extra_data`). If the operator wants the same fill-rate view for those, run:
+
+```sql
+SELECT unnest(clay_table_names) AS clay_table, COUNT(*) AS leads
+FROM leads
+WHERE $1 = ANY(segment_ids)
+GROUP BY clay_table
+ORDER BY leads DESC
+LIMIT 25;
+
+SELECT unnest(info_tags) AS info_tag, COUNT(*) AS leads
+FROM leads
+WHERE $1 = ANY(segment_ids)
+GROUP BY info_tag
+ORDER BY leads DESC
+LIMIT 25;
+```
+
+`clay_table_names` records which Clay tables a lead has been pushed from (operational lineage). `info_tags` is everything else — legacy migration tags, qualification labels, etc. Both are merged via union, never overwritten.
+
 ## Important
 - This is READ-ONLY — nothing is modified
 - Useful before running `/generate-http-query` — shows what keys already exist
 - Useful before `/push-to-clay` — shows what enrichment data is already populated
-- If no extra_data exists for a segment, say: "No extra_data found. This segment's leads haven't been enriched yet via HTTP Column 2."
+- If no extra_data exists for a segment, say: "No extra_data found. This segment's leads haven't been enriched yet via the upsert_lead push-back."
+- `lcp`, `tti`, `aov` are NOT dedicated columns — they live as `extra_data` keys (e.g. `crux_lcp_p75`, `aov`).
+- `clay_table_names` is a dedicated array column on `leads`, not an `extra_data` key.

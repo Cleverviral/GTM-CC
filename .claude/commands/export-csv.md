@@ -52,6 +52,10 @@ segment_id, recipe_id, recipe_version, selected_approach
 
 The last 4 are custom fields for sequencer tracking.
 
+Optional extra columns operators sometimes ask for:
+- `clay_table_names` (joined as a comma-separated string) — useful for tracing which Clay table produced which lead in a sequencer report
+- `batch_id` — groups outputs from the same Clay run
+
 ## Step 5: Generate CSV
 
 Save to: `exports/{client_name}-{segment_tag}-{date}.csv`
