@@ -127,7 +127,8 @@ Subscriber-replicated from CleverViral Prod (do not write directly — changes f
 | is_personal_email | boolean | |
 | city, country | text | |
 | segment_ids | int[] | Array of segment IDs — cross-client membership is intentional |
-| info_tags | text[] | Free-form context tags (e.g. `ss-qualified-feb26`, `builtwith-data`, clay_table_name lineage). Gravity-like campaign-routing tags were moved to `segment_ids`; `info_tags` holds everything else. |
+| info_tags | text[] | Free-form context tags (e.g. `ss-qualified-feb26`, `builtwith-data`, legacy qualification tags). Gravity-like campaign-routing tags were moved to `segment_ids`; `info_tags` holds everything else. |
+| clay_table_names | text[] | Operational lineage — every Clay table this lead has been pushed from. Backfilled from Supabase's `client_contacts.clay_table_names` on 2026-04-27. Maintained going forward by the `upsert_lead` function via the `p_clay_table_names` parameter. |
 | extra_data | jsonb | Flexible catch-all for Clay enrichment + historical personalizations |
 | created_at | timestamptz | |
 
@@ -493,7 +494,7 @@ Each approach file contains:
 5. **Approaches in Clay templates, not webhook** — `clay_template_name` + `clay_template_link` on recipes point to saved Clay templates. Some recipes use the sentinel `"Refer to sample email repo"` for Notion-based static approaches.
 6. **extra_data JSONB** — flexible catch-all for any Clay enrichment data. `lcp`, `tti`, `aov` all live here (not dedicated columns).
 7. **segment_ids is an array** — a lead can be in multiple segments across clients. Same email used by multiple clients shares ONE lead row with a union of segments.
-8. **info_tags vs segment_ids** — segment_ids drive campaigns; info_tags preserve context/lineage (e.g. clay_table_names, legacy qualification tags like `ss-qualified-feb26`). Non-campaign-routing tags go to info_tags.
+8. **info_tags vs segment_ids vs clay_table_names** — `segment_ids` drive campaigns; `clay_table_names` records Clay-table lineage (which Clay table(s) this lead has been pushed from); `info_tags` is the catch-all for everything else (legacy qualification tags like `ss-qualified-feb26`, `builtwith-data`, etc.). Three different semantic buckets, all on the same lead row.
 9. **clients is subscriber-replicated** — `clients` in TAM + Recipe DB auto-syncs from CleverViral Prod. Never write to clients directly from TAM + Recipe DB.
 10. **`personalizations jsonb` on email_outputs** — structured per-lead personalization data (first lines, research bullets) used to craft each email.
 11. **[blank line] in approaches = formatting instruction** — the copywriter agent renders these as line breaks, NEVER as literal "[blank line]" text

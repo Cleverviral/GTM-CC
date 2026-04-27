@@ -48,13 +48,15 @@ docs.
 
 ## Body — paste this verbatim
 
-**34 slots, zero type casts.** `linkedin_username`, `company_domain`, `is_personal_email` are NOT in the body — the function auto-derives them from other fields (see "Auto-derived fields" below). That's 3 less columns for the operator to map per Clay table.
+**35 slots, zero type casts.** `linkedin_username`, `company_domain`, `is_personal_email` are NOT in the body — the function auto-derives them. That's 3 fewer columns for the operator to map per Clay table.
+
+**Slot 23 is `p_clay_table_names`** — a dedicated array column on `leads` that records which Clay tables a lead has been pushed from (e.g. `"TryNow Beauty Apollo Set 1, TryNow Q2 Expansion"`). Same merge rules as `info_tags` — incoming empty leaves existing untouched; incoming with values does a union merge.
 
 **Why zero casts:** every parameter is text in the function signature, parsed internally. So Clay can send `CLAYFORMATVALUE()`, `10.2K`, empty strings, or other garbage in any slot — the function normalizes safely. Bad values become NULL, the row still succeeds. There's nothing in the body that can fail at the type-cast layer.
 
 ```json
 {
-  "query": "SELECT upsert_lead(p_email := $1, p_segment_ids := $2, p_first_name := NULLIF($3, ''), p_last_name := NULLIF($4, ''), p_full_name := NULLIF($5, ''), p_job_title := NULLIF($6, ''), p_linkedin_profile_url := NULLIF($7, ''), p_company_name := NULLIF($8, ''), p_company_website := NULLIF($9, ''), p_company_linkedin_url := NULLIF($10, ''), p_industry := NULLIF($11, ''), p_monthly_visits := NULLIF($12, ''), p_employee_count := NULLIF($13, ''), p_email_verified := NULLIF($14, ''), p_email_verified_at := NULLIF($15, ''), p_mx_provider := NULLIF($16, ''), p_has_email_security_gateway := NULLIF($17, ''), p_is_catchall := NULLIF($18, ''), p_city := NULLIF($19, ''), p_country := NULLIF($20, ''), p_info_tags := NULLIF($21, ''), p_extra_data_pairs := NULLIF($22, ''), p_recipe_id := NULLIF($23, ''), p_recipe_version := NULLIF($24, ''), p_selected_approach := NULLIF($25, ''), p_batch_id := NULLIF($26, ''), p_email_1_variant_a := NULLIF($27, ''), p_email_1_variant_b := NULLIF($28, ''), p_email_2_variant_a := NULLIF($29, ''), p_email_2_variant_b := NULLIF($30, ''), p_email_3_variant_a := NULLIF($31, ''), p_email_3_variant_b := NULLIF($32, ''), p_company_summary := NULLIF($33, ''), p_personalizations_pairs := NULLIF($34, ''))",
+  "query": "SELECT upsert_lead(p_email := $1, p_segment_ids := $2, p_first_name := NULLIF($3, ''), p_last_name := NULLIF($4, ''), p_full_name := NULLIF($5, ''), p_job_title := NULLIF($6, ''), p_linkedin_profile_url := NULLIF($7, ''), p_company_name := NULLIF($8, ''), p_company_website := NULLIF($9, ''), p_company_linkedin_url := NULLIF($10, ''), p_industry := NULLIF($11, ''), p_monthly_visits := NULLIF($12, ''), p_employee_count := NULLIF($13, ''), p_email_verified := NULLIF($14, ''), p_email_verified_at := NULLIF($15, ''), p_mx_provider := NULLIF($16, ''), p_has_email_security_gateway := NULLIF($17, ''), p_is_catchall := NULLIF($18, ''), p_city := NULLIF($19, ''), p_country := NULLIF($20, ''), p_info_tags := NULLIF($21, ''), p_extra_data_pairs := NULLIF($22, ''), p_clay_table_names := NULLIF($23, ''), p_recipe_id := NULLIF($24, ''), p_recipe_version := NULLIF($25, ''), p_selected_approach := NULLIF($26, ''), p_batch_id := NULLIF($27, ''), p_email_1_variant_a := NULLIF($28, ''), p_email_1_variant_b := NULLIF($29, ''), p_email_2_variant_a := NULLIF($30, ''), p_email_2_variant_b := NULLIF($31, ''), p_email_3_variant_a := NULLIF($32, ''), p_email_3_variant_b := NULLIF($33, ''), p_company_summary := NULLIF($34, ''), p_personalizations_pairs := NULLIF($35, ''))",
   "params": [
     "{{Email}}",
     "<SEGMENT_ID>",
@@ -78,6 +80,7 @@ docs.
     "{{Country}}",
     "<INFO_TAGS>",
     "<EXTRA_DATA_BUILDER>",
+    "<CLAY_TABLE_NAMES>",
     "<RECIPE_ID_OR_EMPTY>",
     "<RECIPE_VERSION_OR_EMPTY>",
     "{{Selected Approach}}",
@@ -98,22 +101,32 @@ docs.
 
 ## What the operator changes per Clay table
 
-Six slots are placeholders (everything in `<...>`). Replace each with a
+Seven slots are placeholders (everything in `<...>`). Replace each with a
 literal string for that table:
 
 | Slot | Placeholder | What to put | Example |
 |---:|---|---|---|
 | 2 | `<SEGMENT_ID>` | The segment_id (or comma-separated multi) this Clay table pushes into. Required. | `"54"` (test segment) or `"28,37"` (multi) |
-| 21 | `<INFO_TAGS>` | A label tagging which Clay table this came from. Comma-separated for multiple. | `"Gambling Apollo Table, 2026-04-23"` |
+| 21 | `<INFO_TAGS>` | Free-form labels for cross-context tagging (legacy/source qualification tags). Comma-separated. | `"q2-rerun, builtwith-data"` |
 | 22 | `<EXTRA_DATA_BUILDER>` | Pipe/semicolon recipe building extra_data jsonb from Clay columns. NOT JSON. | `"product_category|{{Product Category}};aov|{{AOV}}"` or `""` if none |
-| 23 | `<RECIPE_ID_OR_EMPTY>` | recipe_id of the active recipe for this segment (only when generating emails). | `"51"` or `""` for enrichment-only |
-| 24 | `<RECIPE_VERSION_OR_EMPTY>` | Version of that recipe. | `"1"` or `""` for enrichment-only |
-| 34 | `<PERSONALIZATIONS_BUILDER_OR_EMPTY>` | Same pipe format as extra_data, building personalizations jsonb for email_outputs. | `"first_line|{{First Line}};research_report|{{Research Report}}"` or `""` |
+| 23 | `<CLAY_TABLE_NAMES>` | Name(s) of the Clay table(s) this lead is being pushed from. Comma-separated for multi. | `"TryNow Beauty Apollo Set 1, TryNow Q2 Expansion"` |
+| 24 | `<RECIPE_ID_OR_EMPTY>` | recipe_id of the active recipe for this segment (only when generating emails). | `"51"` or `""` for enrichment-only |
+| 25 | `<RECIPE_VERSION_OR_EMPTY>` | Version of that recipe. | `"1"` or `""` for enrichment-only |
+| 35 | `<PERSONALIZATIONS_BUILDER_OR_EMPTY>` | Same pipe format as extra_data, building personalizations jsonb for email_outputs. | `"first_line|{{First Line}};research_report|{{Research Report}}"` or `""` |
 
 The remaining 28 slots are `{{Clay Variable}}` placeholders for per-row
 data. Clay's "Apply template" UI shows each as a dropdown — pick the
 matching Clay column. For columns your Clay table doesn't have, see the
 next section on the "Don't have it" workaround.
+
+### `info_tags` vs `clay_table_names` — when to use which
+
+Both are text[] arrays on `leads`. They represent different semantics:
+
+- **`clay_table_names`** = the list of Clay table names this lead has been pushed from. Operational signal — "this lead came in via the SpeedSize SL 50K-100K table." Always use the actual Clay table name.
+- **`info_tags`** = everything else operators want to flag — legacy migration tags (`ss-qualified-feb26`), qualification labels (`builtwith-data`, `madison-class-a`), special campaign markers, etc. Free-form.
+
+Both merge via union on update — incoming empty leaves existing values intact, incoming with values dedupes and merges.
 
 ---
 
@@ -221,7 +234,7 @@ Clay column mappings per table.
 
 ## recipe_id — can be left empty
 
-Slots 23 (`p_recipe_id`) and 24 (`p_recipe_version`) can both be `""` even
+Slots 24 (`p_recipe_id`) and 25 (`p_recipe_version`) can both be `""` even
 when generating emails. The function auto-falls back to the **active
 recipe for the primary segment** (first segment_id in slot 2). Only pass
 an explicit recipe_id when you need a specific one (e.g. testing a
@@ -288,7 +301,21 @@ function parses the resulting string into jsonb and merges it into
 `leads.extra_data`. Empty values and `CLAYFORMATVALUE(...)` placeholders
 are filtered out automatically.
 
-### `<RECIPE_ID_OR_EMPTY>` — slot 26
+### `<CLAY_TABLE_NAMES>` — slot 23
+
+The Clay table name(s) this lead is being pushed from. Comma-separated
+for multiple. Stored in `leads.clay_table_names[]` (deduped + merged
+with any existing names on the lead).
+
+Example: `"TryNow Beauty Apollo Set 1"` for one table, or
+`"TryNow Beauty Apollo Set 1, TryNow Q2 Expansion"` if you're pushing
+from a Clay table that consolidated multiple sources.
+
+This is the operational lineage column — when a lead exists in multiple
+Clay tables across time, this array shows all of them. Same merge rule
+as `info_tags`: incoming empty leaves existing untouched.
+
+### `<RECIPE_ID_OR_EMPTY>` — slot 24
 
 The recipe_id of the active recipe for the primary segment. Look it up:
 
@@ -303,14 +330,14 @@ For test segment 54 the placeholder recipe is `recipe_id = 51`.
 If this Clay table is enrichment-only (not generating emails), put `""`.
 The function will skip the email_outputs insert.
 
-### `<RECIPE_VERSION_OR_EMPTY>` — slot 27
+### `<RECIPE_VERSION_OR_EMPTY>` — slot 25
 
 The version number of that recipe. Currently most recipes are at version 1.
 
 If enrichment-only, `""`. If generating emails, the version that matches
-the recipe_id from slot 26.
+the recipe_id from slot 24.
 
-### `<PERSONALIZATIONS_BUILDER_OR_EMPTY>` — slot 37
+### `<PERSONALIZATIONS_BUILDER_OR_EMPTY>` — slot 35
 
 Same format as `<EXTRA_DATA_BUILDER>`. Recipe for building the
 `email_outputs.personalizations` jsonb from Clay columns.
